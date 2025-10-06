@@ -83,12 +83,12 @@ type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
 
 const targetDynamoParametersSchema = baseDynamoParametersSchema
   .extend({
-    purgeTable: z.boolean(),
+    purgeTable: z.boolean().optional(),
     tablePK: z.string().optional(),
     tableSK: z.string().optional(),
   })
   .superRefine((val, ctx) => {
-    if (val.purgeTable && !val.tablePK?.length)
+    if (val.purgeTable === true && !val.tablePK?.length)
       ctx.addIssue({
         code: "custom",
         expected: "string",
