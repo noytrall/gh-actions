@@ -44,10 +44,6 @@ async function run() {
         sessionToken,
       });
 
-      console.log(
-        "sourceDynamoResult",
-        JSON.stringify(sourceDynamoResult, null, 2)
-      );
       if (!sourceDynamoResult.success) {
         throw new Error(sourceDynamoResult.message);
       }

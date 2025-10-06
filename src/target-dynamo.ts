@@ -76,7 +76,10 @@ export default async function ({
       }
     }
 
+    console.log("DATA.length", data.length);
     const batches = chunk(data, 25);
+
+    console.log("BATCHES.length", batches.length);
 
     for (const [index, batch] of batches.entries()) {
       try {
@@ -93,13 +96,14 @@ export default async function ({
         await client.send(command);
       } catch (err) {
         console.log(
-          `Failed purge of target table at ${index}/${
+          `Failed batchWrite of target table at ${index}/${
             batches.length
           }: ${(tablePK
             ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
             : batch
           ).join(", ")}`
         );
+        return resultFail(500, err);
       }
     }
     return resultSuccess(null);

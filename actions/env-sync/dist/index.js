@@ -69144,7 +69144,9 @@ const chunk = (array, length) => {
                 }
             }
         }
+        console.log("DATA.length", data.length);
         const batches = chunk(data, 25);
+        console.log("BATCHES.length", batches.length);
         for (const [index, batch] of batches.entries()) {
             try {
                 const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
@@ -69160,9 +69162,10 @@ const chunk = (array, length) => {
                 await client.send(command);
             }
             catch (err) {
-                console.log(`Failed purge of target table at ${index}/${batches.length}: ${(tablePK
+                console.log(`Failed batchWrite of target table at ${index}/${batches.length}: ${(tablePK
                     ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
                     : batch).join(", ")}`);
+                return resultFail(500, err);
             }
         }
         return resultSuccess(null);
@@ -69203,7 +69206,6 @@ async function run() {
                 tableName: dynamoTableName,
                 sessionToken,
             });
-            console.log("sourceDynamoResult", JSON.stringify(sourceDynamoResult, null, 2));
             if (!sourceDynamoResult.success) {
                 throw new Error(sourceDynamoResult.message);
             }
