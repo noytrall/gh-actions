@@ -8,7 +8,10 @@ import targetDynamo from "./target-dynamo.js";
 async function run() {
   try {
     const configPath = core.getInput("config-path", { required: true });
+    console.log("configPath", configPath);
+    console.log("GITHUB_WORKSPACE", process.env.GITHUB_WORKSPACE!);
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
+    console.log("fullPath", fullPath);
 
     // TODO: validate structure of config
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
