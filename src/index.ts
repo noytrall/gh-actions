@@ -13,6 +13,9 @@ async function run() {
     // TODO: validate structure of config
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
+    console.log("config", JSON.stringify(config));
+    if (1 === 1) return;
+
     let sourceData: Array<Record<string, unknown>> | null = null;
 
     if (config.source.type === "dynamo") {
