@@ -44,9 +44,15 @@ const target_dynamo_js_1 = __importDefault(require("./target-dynamo.js"));
 async function run() {
     try {
         const configPath = core.getInput("config-path", { required: true });
+        console.log("configPath", configPath);
+        console.log("GITHUB_WORKSPACE", process.env.GITHUB_WORKSPACE);
         const fullPath = path_1.default.resolve(process.env.GITHUB_WORKSPACE, configPath);
+        console.log("fullPath", fullPath);
         // TODO: validate structure of config
         const config = JSON.parse(fs_1.default.readFileSync(fullPath, "utf8"));
+        console.log("config", JSON.stringify(config));
+        if (1 === 1)
+            return;
         let sourceData = null;
         if (config.source.type === "dynamo") {
             const { source: { region, accessKeyId, secretAccessKey, dynamoTableName, sessionToken, }, } = config;
@@ -58,6 +64,7 @@ async function run() {
                 sessionToken,
             });
             if (!sourceDynamoResult.success) {
+                console.log("sourceDynamoResult", sourceDynamoResult.message);
                 return;
             }
             sourceData = sourceDynamoResult.value;
@@ -81,11 +88,15 @@ async function run() {
                 tableSK,
                 data: sourceData,
             });
+            if (!targetDynamoResult.success) {
+                console.log("targetDynamoResult", targetDynamoResult.message);
+                return targetDynamoResult;
+            }
         }
         console.log(`Mode set to: ${config.source.type}`);
     }
     catch (error) {
-        core.setFailed(typeof error === "string" ? error : error.message);
+        console.log(typeof error === "string" ? error : error.message);
     }
 }
 run();

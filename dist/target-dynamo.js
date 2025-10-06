@@ -69,6 +69,7 @@ async function default_1({ accessKeyId, region, secretAccessKey, tableName, sess
                     : batch).join(", ")}`);
             }
         }
+        return (0, result_1.resultSuccess)(null);
     }
     catch (err) {
         return (0, result_1.resultFail)("500", err);
