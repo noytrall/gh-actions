@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "CommonJS",
-    "outDir": "dist",
+    "outDir": "actions/env-sync/dist",
     "rootDir": "src",
     "esModuleInterop": true,
     "strict": true,
