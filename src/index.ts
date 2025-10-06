@@ -1,9 +1,10 @@
 import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
-import type { Config } from "./type.js";
+import { configSchema, type Config } from "./type.js";
 import sourceDynamo from "./source-dynamo.js";
 import targetDynamo from "./target-dynamo.js";
+import { resultFail } from "./utils/result.js";
 
 async function run() {
   try {
@@ -13,11 +14,19 @@ async function run() {
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
     console.log("fullPath", fullPath);
 
-    // TODO: validate structure of config
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
-    console.log("config", JSON.stringify(config));
-    if (1 === 1) return;
+    const result = configSchema.safeParse(config);
+
+    if (1 === 1) {
+      console.log("RESULT", JSON.stringify(result, null, 2));
+      return result;
+    }
+
+    if (result.error) {
+      console.log("resultFail", JSON.stringify(result.error, null, 2));
+      return resultFail(400, result.error.issues);
+    }
 
     let sourceData: Array<Record<string, unknown>> | null = null;
 
