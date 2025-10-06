@@ -4,7 +4,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "npx tsc"
+    "build": "tsc",
+    "package": "ncc build src/index.ts -o actions/env-sync/dist",
+    "prepare": "npm run package"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,7 @@
   "description": "",
   "devDependencies": {
     "@types/node": "^24.7.0",
+    "@vercel/ncc": "^0.38.4",
     "typescript": "^5.9.3"
   },
   "dependencies": {
