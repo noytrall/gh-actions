@@ -1,14 +1,14 @@
 import {
   DynamoDBDocumentClient,
   ScanCommand,
-  ScanCommandInput,
+  type ScanCommandInput,
 } from "@aws-sdk/lib-dynamodb";
-import { resultFail, resultSuccess } from "./result";
+import { resultFail, resultSuccess } from "./result.js";
 
-export async function scanTable(
+export const scanTable = async (
   client: DynamoDBDocumentClient,
   tableName: string
-) {
+) => {
   try {
     let exclusiveLastKey: Record<string, string> | undefined = undefined;
 
@@ -37,7 +37,7 @@ export async function scanTable(
   } catch (err) {
     return resultFail("500", err);
   }
-}
+};
 
 export function mapDynamoItemsToPkSk(
   data: Array<Record<string, unknown>>,

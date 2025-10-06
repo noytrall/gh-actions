@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = default_1;
-const client_dynamodb_1 = require("@aws-sdk/client-dynamodb");
-const lib_dynamodb_1 = require("@aws-sdk/lib-dynamodb");
-const result_1 = require("./utils/result");
-const dynamo_1 = require("./utils/dynamo");
-async function default_1({ accessKeyId, region, secretAccessKey, sessionToken, tableName, }) {
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { resultFail } from "./utils/result.js";
+import { scanTable } from "./utils/dynamo.js";
+export default async function ({ accessKeyId, region, secretAccessKey, sessionToken, tableName, }) {
     try {
-        const dynamodbClient = new client_dynamodb_1.DynamoDBClient({
+        const dynamodbClient = new DynamoDBClient({
             region,
             credentials: {
                 accessKeyId,
@@ -15,12 +12,13 @@ async function default_1({ accessKeyId, region, secretAccessKey, sessionToken, t
                 sessionToken: sessionToken,
             },
         });
-        const client = lib_dynamodb_1.DynamoDBDocumentClient.from(dynamodbClient, {
+        const client = DynamoDBDocumentClient.from(dynamodbClient, {
             marshallOptions: { removeUndefinedValues: true },
         });
-        return await (0, dynamo_1.scanTable)(client, tableName);
+        return await scanTable(client, tableName);
     }
     catch (err) {
-        return (0, result_1.resultFail)("500", err instanceof Error ? err.message : err);
+        return resultFail("500", err instanceof Error ? err.message : err);
     }
 }
+//# sourceMappingURL=source-dynamo.js.map

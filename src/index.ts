@@ -1,6 +1,6 @@
 import * as core from "@actions/core";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import type { Config } from "./type.js";
 import sourceDynamo from "./source-dynamo.js";
 import targetDynamo from "./target-dynamo.js";

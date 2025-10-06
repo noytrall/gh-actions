@@ -1,1 +1,2 @@
-"use strict";
+export {};
+//# sourceMappingURL=source-s3.js.map

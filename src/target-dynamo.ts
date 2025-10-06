@@ -1,11 +1,11 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { resultFail, resultSuccess } from "./utils/result";
+import { resultFail, resultSuccess } from "./utils/result.js";
 import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
-import { mapDynamoItemsToPkSk, scanTable } from "./utils/dynamo";
-import { chunk } from "./utils/nodash";
+import { mapDynamoItemsToPkSk, scanTable } from "./utils/dynamo.js";
+import { chunk } from "./utils/nodash.js";
 
 export default async function ({
   accessKeyId,

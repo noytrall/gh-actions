@@ -1,11 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  ScanCommand,
-  ScanCommandInput,
-} from "@aws-sdk/lib-dynamodb";
-import { resultFail, resultSuccess } from "./utils/result";
-import { scanTable } from "./utils/dynamo";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { resultFail } from "./utils/result.js";
+import { scanTable } from "./utils/dynamo.js";
 
 export default async function ({
   accessKeyId,

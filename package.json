@@ -1,20 +1,23 @@
 {
   "name": "env-sync",
-  "type": "module",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "build": "tsc",
-    "package": "tsc && ncc build src/index.ts -o dist",
-    "test": "npm run build && node dist/index.js"
+    "build": "npx tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noytrall/gh-actions.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
-  "volta": {
-    "node": "22.20.0"
+  "bugs": {
+    "url": "https://github.com/noytrall/gh-actions/issues"
   },
+  "homepage": "https://github.com/noytrall/gh-actions#readme",
+  "description": "",
   "devDependencies": {
     "@types/node": "^24.7.0",
     "typescript": "^5.9.3"
