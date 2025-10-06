@@ -68981,12 +68981,12 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
 });
 const targetDynamoParametersSchema = baseDynamoParametersSchema
     .extend({
-    purgeTable: zod.boolean(),
+    purgeTable: zod.boolean().optional(),
     tablePK: zod.string().optional(),
     tableSK: zod.string().optional(),
 })
     .superRefine((val, ctx) => {
-    if (val.purgeTable && !val.tablePK?.length)
+    if (val.purgeTable === true && !val.tablePK?.length)
         ctx.addIssue({
             code: "custom",
             expected: "string",

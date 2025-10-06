@@ -23,7 +23,7 @@ export declare const configSchema: z.ZodObject<{
         sessionToken: z.ZodString;
         type: z.ZodLiteral<"dynamo">;
         dynamoTableName: z.ZodString;
-        purgeTable: z.ZodBoolean;
+        purgeTable: z.ZodOptional<z.ZodBoolean>;
         tablePK: z.ZodOptional<z.ZodString>;
         tableSK: z.ZodOptional<z.ZodString>;
     }, z.z.core.$strip>, z.ZodObject<{
