@@ -5,7 +5,7 @@ export interface ResultSuccess<T> {
 export interface ResultFailure<U extends string | number = string> {
   success: false;
   code: U;
-  message?: string | undefined;
+  message: string;
 }
 
 /**

@@ -69189,13 +69189,9 @@ async function run() {
         console.log("fullPath", fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const result = configSchema.safeParse(config);
-        if (true) {
-            console.log("RESULT", JSON.stringify(result, null, 2));
-            return result;
-        }
+        console.log("result :>> ", result);
         if (result.error) {
-            console.log("resultFail", JSON.stringify(result.error, null, 2));
-            return resultFail(400, result.error.issues);
+            throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
         let sourceData = null;
         if (config.source.type === "dynamo") {
@@ -69207,9 +69203,9 @@ async function run() {
                 tableName: dynamoTableName,
                 sessionToken,
             });
+            console.log("sourceDynamoResult", JSON.stringify(sourceDynamoResult, null, 2));
             if (!sourceDynamoResult.success) {
-                console.log("sourceDynamoResult", sourceDynamoResult.message);
-                return;
+                throw new Error(sourceDynamoResult.message);
             }
             sourceData = sourceDynamoResult.value;
         }
@@ -69217,7 +69213,7 @@ async function run() {
         }
         if (!sourceData) {
             // TODO: Handle this
-            return;
+            throw new Error("Somehow, sourceData is null");
         }
         if (config.target.type === "dynamo") {
             const { target: { accessKeyId, dynamoTableName, purgeTable, region, secretAccessKey, sessionToken, tablePK, tableSK, }, } = config;
@@ -69232,15 +69228,15 @@ async function run() {
                 tableSK,
                 data: sourceData,
             });
+            console.log("targetDynamoResult", JSON.stringify(targetDynamoResult, null, 2));
             if (!targetDynamoResult.success) {
-                console.log("targetDynamoResult", targetDynamoResult.message);
-                return targetDynamoResult;
+                throw new Error(targetDynamoResult.message);
             }
         }
-        console.log(`Mode set to: ${config.source.type}`);
     }
     catch (error) {
         console.log(typeof error === "string" ? error : error.message);
+        throw error;
     }
 }
 run();
