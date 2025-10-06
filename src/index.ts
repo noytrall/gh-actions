@@ -4,7 +4,6 @@ import path from "node:path";
 import { configSchema, type Config } from "./type.js";
 import sourceDynamo from "./source-dynamo.js";
 import targetDynamo from "./target-dynamo.js";
-import { resultFail } from "./utils/result.js";
 
 async function run() {
   try {

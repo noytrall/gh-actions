@@ -69139,7 +69139,7 @@ const chunk = (array, length) => {
                     await client.send(command);
                 }
                 catch (err) {
-                    console.log(`Failed purge of target table at ${index}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
+                    console.log(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
                     return resultFail(500, err);
                 }
             }
@@ -69162,7 +69162,7 @@ const chunk = (array, length) => {
                 await client.send(command);
             }
             catch (err) {
-                console.log(`Failed batchWrite of target table at ${index}/${batches.length}: ${(tablePK
+                console.log(`Failed batchWrite of target table at ${index + 1}/${batches.length}: ${(tablePK
                     ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
                     : batch).join(", ")}`);
                 return resultFail(500, err);
@@ -69176,7 +69176,6 @@ const chunk = (array, length) => {
 }
 
 ;// CONCATENATED MODULE: ./src/index.ts
-
 
 
 

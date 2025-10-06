@@ -67,7 +67,7 @@ export default async function ({
           await client.send(command);
         } catch (err) {
           console.log(
-            `Failed purge of target table at ${index}/${
+            `Failed purge of target table at ${index + 1}/${
               batches.length
             }: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`
           );
@@ -96,7 +96,7 @@ export default async function ({
         await client.send(command);
       } catch (err) {
         console.log(
-          `Failed batchWrite of target table at ${index}/${
+          `Failed batchWrite of target table at ${index + 1}/${
             batches.length
           }: ${(tablePK
             ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
