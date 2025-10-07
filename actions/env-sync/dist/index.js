@@ -69193,6 +69193,12 @@ async function run() {
         core.info("fullPath: " + fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const result = configSchema.safeParse(config);
+        core.setSecret(config.source.accessKeyId);
+        core.setSecret(config.source.secretAccessKey);
+        core.setSecret(config.source.sessionToken);
+        core.setSecret(config.target.accessKeyId);
+        core.setSecret(config.target.secretAccessKey);
+        core.setSecret(config.target.sessionToken);
         core.info("parseResult: " + JSON.stringify(result, null, 2));
         if (result.error) {
             throw new Error(JSON.stringify(result.error.issues, null, 2));
