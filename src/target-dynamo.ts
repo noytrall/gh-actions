@@ -125,6 +125,11 @@ export default async function ({
         tableName,
         tablePrimaryKey
       );
+
+      core.info(
+        "definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2)
+      );
+
       await doPurgeTable(client, tableName, definedPrimaryKey);
     }
 
