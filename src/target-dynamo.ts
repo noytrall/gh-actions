@@ -73,14 +73,12 @@ const doPurgeTable = async (
       });
       // TODO: handle UnprocessedItems
       await client.send(command);
-    } catch (err) {
+    } catch (error) {
       core.error(
         `Failed purge of target table at ${index + 1}/${batches.length}: ` +
-          JSON.stringify(
-            mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")
-          )
+          getErrorMessage(error)
       );
-      throw err;
+      throw error;
     }
   }
 };
