@@ -56607,7 +56607,8 @@ const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
             await client.send(command);
         }
         catch (err) {
-            core.error(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
+            core.error(`Failed purge of target table at ${index + 1}/${batches.length}: ` +
+                JSON.stringify(mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")));
             throw err;
         }
     }
