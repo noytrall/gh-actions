@@ -1,11 +1,11 @@
 import * as core from "@actions/core";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DescribeTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
 import { mapDynamoItemsToPkSk, scanTable } from "./utils/dynamo.js";
-import { chunk } from "./utils/nodash.js";
+import { chunk, isString } from "./utils/nodash.js";
 import { resultFail, resultSuccess } from "./utils/result.js";
 
 export default async function ({
@@ -29,6 +29,9 @@ export default async function ({
   tableSK?: string;
   data: Array<Record<string, unknown>>;
 }) {
+  let _tablePK = tablePK;
+  let _tableSK = tableSK;
+
   try {
     const dynamodbClient = new DynamoDBClient({
       region,
@@ -43,7 +46,35 @@ export default async function ({
     });
 
     // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
-    if (purgeTable && tablePK) {
+    if (purgeTable) {
+      if (!_tablePK) {
+        const describeCommand = new DescribeTableCommand({
+          TableName: tableName,
+        });
+        const describeResult = await client.send(describeCommand);
+
+        core.info("describeResult: " + JSON.stringify(describeResult, null, 2));
+
+        if (!describeResult.Table) {
+          throw new Error(
+            "Error in DescribeTableCommand. Table attribute not defined"
+          );
+        }
+
+        _tablePK = describeResult.Table.KeySchema?.find(
+          (ks) => ks.KeyType === "HASH"
+        )?.AttributeName;
+        _tableSK = describeResult.Table.KeySchema?.find(
+          (ks) => ks.KeyType === "RANGE"
+        )?.AttributeName;
+      }
+
+      if (!isString(_tablePK)) {
+        throw new Error(
+          `PK for table ${tableName} not found. Either pass it in the configuration file, or find out why the describeTableCommand failed`
+        );
+      }
+
       const scanResult = await scanTable(client, tableName);
 
       if (!scanResult.success) return scanResult;
@@ -57,8 +88,8 @@ export default async function ({
               [tableName]: batch.map((item) => ({
                 DeleteRequest: {
                   Key: {
-                    [tablePK]: item[tablePK],
-                    ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                    [_tablePK as string]: item[_tablePK as string],
+                    ...(_tableSK ? { [_tableSK]: item[_tableSK] } : {}),
                   },
                 },
               })),
@@ -70,7 +101,7 @@ export default async function ({
           core.info(
             `Failed purge of target table at ${index + 1}/${
               batches.length
-            }: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`
+            }: ${mapDynamoItemsToPkSk(batch, _tablePK, _tableSK).join(", ")}`
           );
           return resultFail(500, err);
         }

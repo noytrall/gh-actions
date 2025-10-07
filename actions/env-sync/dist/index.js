@@ -56555,6 +56555,7 @@ const chunk = (array, length) => {
         chunks.push(array.slice(i, i + length));
     return chunks;
 };
+const isString = (value) => typeof value === "string";
 
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
 
@@ -56564,6 +56565,8 @@ const chunk = (array, length) => {
 
 
 /* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePK, tableSK, data, }) {
+    let _tablePK = tablePK;
+    let _tableSK = tableSK;
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
@@ -56577,7 +56580,22 @@ const chunk = (array, length) => {
             marshallOptions: { removeUndefinedValues: true },
         });
         // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
-        if (purgeTable && tablePK) {
+        if (purgeTable) {
+            if (!_tablePK) {
+                const describeCommand = new dist_cjs.DescribeTableCommand({
+                    TableName: tableName,
+                });
+                const describeResult = await client.send(describeCommand);
+                core.info("describeResult: " + JSON.stringify(describeResult, null, 2));
+                if (!describeResult.Table) {
+                    throw new Error("Error in DescribeTableCommand. Table attribute not defined");
+                }
+                _tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "HASH")?.AttributeName;
+                _tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "RANGE")?.AttributeName;
+            }
+            if (!isString(_tablePK)) {
+                throw new Error(`PK for table ${tableName} not found. Either pass it in the configuration file, or find out why the describeTableCommand failed`);
+            }
             const scanResult = await scanTable(client, tableName);
             if (!scanResult.success)
                 return scanResult;
@@ -56589,8 +56607,8 @@ const chunk = (array, length) => {
                             [tableName]: batch.map((item) => ({
                                 DeleteRequest: {
                                     Key: {
-                                        [tablePK]: item[tablePK],
-                                        ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                                        [_tablePK]: item[_tablePK],
+                                        ...(_tableSK ? { [_tableSK]: item[_tableSK] } : {}),
                                     },
                                 },
                             })),
@@ -56600,7 +56618,7 @@ const chunk = (array, length) => {
                     await client.send(command);
                 }
                 catch (err) {
-                    core.info(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
+                    core.info(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, _tablePK, _tableSK).join(", ")}`);
                     return resultFail(500, err);
                 }
             }
@@ -69152,19 +69170,10 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
     s3BucketName: zod.string(),
     s3Key: zod.string(),
 });
-const targetDynamoParametersSchema = baseDynamoParametersSchema
-    .extend({
+const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
     purgeTable: zod.boolean().optional(),
     tablePK: zod.string().optional(),
     tableSK: zod.string().optional(),
-})
-    .superRefine((val, ctx) => {
-    if (val.purgeTable === true && !val.tablePK?.length)
-        ctx.addIssue({
-            code: "custom",
-            expected: "string",
-            message: "tablePK is required when purgeTable is enabled",
-        });
 });
 const configSchema = zod.object({
     source: zod.discriminatedUnion("type", [

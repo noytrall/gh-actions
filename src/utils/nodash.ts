@@ -6,3 +6,6 @@ export const chunk = <T>(array: Array<T>, length: number): T[][] => {
 
   return chunks;
 };
+
+export const isString = (value: any): value is string =>
+  typeof value === "string";

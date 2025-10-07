@@ -81,21 +81,19 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
 });
 type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
 
-const targetDynamoParametersSchema = baseDynamoParametersSchema
-  .extend({
-    purgeTable: z.boolean().optional(),
-    tablePK: z.string().optional(),
-    tableSK: z.string().optional(),
-  })
-  .superRefine((val, ctx) => {
+const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
+  purgeTable: z.boolean().optional(),
+  tablePK: z.string().optional(),
+  tableSK: z.string().optional(),
+});
+/* .superRefine((val, ctx) => {
     if (val.purgeTable === true && !val.tablePK?.length)
       ctx.addIssue({
         code: "custom",
         expected: "string",
         message: "tablePK is required when purgeTable is enabled",
       });
-  });
-
+  }) */
 type TargetDynamoParameters = z.infer<typeof targetDynamoParametersSchema>;
 
 export const configSchema = z.object({
