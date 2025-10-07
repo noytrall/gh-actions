@@ -81,10 +81,10 @@ const doPurgeTable = async (
           batches.length
         }: ${message};${
           message === "The provided key element does not match the schema"
-            ? ` key provided: ${{
+            ? ` key provided: ${JSON.stringify({
                 [tablePK]: tablePK,
                 ...(tableSK ? { [tableSK]: tableSK } : {}),
-              }}`
+              })}`
             : ""
         }`
       );
