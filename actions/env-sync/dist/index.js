@@ -69228,8 +69228,9 @@ async function run() {
         core.setSecret(config.target.accessKeyId);
         core.setSecret(config.target.secretAccessKey);
         core.setSecret(config.target.sessionToken);
-        core.info("parseResult: " + JSON.stringify(result, null, 2));
+        core.info("CONFIG: " + JSON.stringify(config));
         if (result.error) {
+            core.error("parseResult: " + JSON.stringify(result, null, 2));
             throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
         let sourceData = null;
