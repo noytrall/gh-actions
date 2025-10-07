@@ -81,10 +81,15 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
 });
 type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
 
+const dynamoTablePrimaryKeySchema = z.object({
+  pk: z.string(),
+  sk: z.string().optional(),
+});
+export type DynamoTablePrimaryKey = z.infer<typeof dynamoTablePrimaryKeySchema>;
+
 const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
   purgeTable: z.boolean().optional(),
-  tablePK: z.string().optional(),
-  tableSK: z.string().optional(),
+  tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
 });
 /* .superRefine((val, ctx) => {
     if (val.purgeTable === true && !val.tablePK?.length)
@@ -94,7 +99,9 @@ const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
         message: "tablePK is required when purgeTable is enabled",
       });
   }) */
-type TargetDynamoParameters = z.infer<typeof targetDynamoParametersSchema>;
+export type TargetDynamoParameters = z.infer<
+  typeof targetDynamoParametersSchema
+>;
 
 export const configSchema = z.object({
   source: z.discriminatedUnion("type", [
@@ -108,3 +115,5 @@ export const configSchema = z.object({
 });
 
 export type Config = z.infer<typeof configSchema>;
+
+export type DynamoData = Array<Record<string, unknown>>;

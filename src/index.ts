@@ -3,7 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import sourceDynamo from "./source-dynamo.js";
 import targetDynamo from "./target-dynamo.js";
-import { configSchema, type Config } from "./type.js";
+import { configSchema, type Config } from "./utils/type.js";
+import { isArray, isArrayOfRecords } from "./utils/nodash.js";
 
 async function run() {
   try {
@@ -30,7 +31,7 @@ async function run() {
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
-    let sourceData: Array<Record<string, unknown>> | null = null;
+    let sourceData: unknown = null;
 
     if (config.source.type === "dynamo") {
       const {
@@ -64,6 +65,17 @@ async function run() {
     }
 
     if (config.target.type === "dynamo") {
+      if (
+        !isArrayOfRecords(
+          sourceData,
+          // If source of data is "dynamo", than data is already an array of records, unless it has been altered by some middleware (functionality yet to be implemented)
+          config.source.type === "dynamo" || undefined
+        )
+      )
+        throw new Error(
+          "Data to insert into dynamoDB table is malformed. Requires an array of records"
+        );
+
       const {
         target: {
           accessKeyId,
@@ -72,8 +84,7 @@ async function run() {
           region,
           secretAccessKey,
           sessionToken,
-          tablePK,
-          tableSK,
+          tablePrimaryKey,
         },
       } = config;
       const targetDynamoResult = await targetDynamo({
@@ -83,8 +94,7 @@ async function run() {
         tableName: dynamoTableName,
         purgeTable,
         sessionToken,
-        tablePK,
-        tableSK,
+        tablePrimaryKey,
         data: sourceData,
       });
       core.info(

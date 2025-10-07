@@ -56556,6 +56556,13 @@ const chunk = (array, length) => {
     return chunks;
 };
 const isString = (value) => typeof value === "string";
+const isArray = (value) => Array.isArray(value);
+const isRecord = (value) => value !== null && typeof value === "object" && !isArray(value);
+const isArrayOfRecords = (value, force) => {
+    if (force !== undefined)
+        return force;
+    return isArray(value) && value.every(isRecord);
+};
 
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
 
@@ -56564,9 +56571,54 @@ const isString = (value) => typeof value === "string";
 
 
 
-/* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePK, tableSK, data, }) {
-    let _tablePK = tablePK;
-    let _tableSK = tableSK;
+const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
+    if (tablePrimaryKey)
+        return tablePrimaryKey;
+    const describeCommand = new dist_cjs.DescribeTableCommand({
+        TableName: tableName,
+    });
+    const describeResult = await client.send(describeCommand);
+    core.info("describeResult: " + JSON.stringify(describeResult, null, 2));
+    if (!describeResult.Table) {
+        throw new Error("Error in DescribeTableCommand. Table attribute not defined");
+    }
+    const tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "HASH")?.AttributeName;
+    const tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "RANGE")?.AttributeName;
+    if (!tablePK)
+        throw new Error("No PK found for table " + tableName);
+    return { pk: tablePK, sk: tableSK };
+};
+const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
+    const scanResult = await scanTable(client, tableName);
+    if (!scanResult.success)
+        return scanResult;
+    const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
+    const batches = chunk(scanResult.value, 25);
+    for (const [index, batch] of batches.entries()) {
+        try {
+            const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
+                RequestItems: {
+                    [tableName]: batch.map((item) => ({
+                        DeleteRequest: {
+                            Key: {
+                                [tablePK]: item[tablePK],
+                                ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                            },
+                        },
+                    })),
+                },
+            });
+            // TODO: handle UnprocessedItems
+            await client.send(command);
+        }
+        catch (err) {
+            core.info(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
+            return resultFail(500, err);
+        }
+    }
+};
+const populateTable = async (client) => { };
+/* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePrimaryKey, data, }) {
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
@@ -56581,47 +56633,8 @@ const isString = (value) => typeof value === "string";
         });
         // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
         if (purgeTable) {
-            if (!_tablePK) {
-                const describeCommand = new dist_cjs.DescribeTableCommand({
-                    TableName: tableName,
-                });
-                const describeResult = await client.send(describeCommand);
-                core.info("describeResult: " + JSON.stringify(describeResult, null, 2));
-                if (!describeResult.Table) {
-                    throw new Error("Error in DescribeTableCommand. Table attribute not defined");
-                }
-                _tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "HASH")?.AttributeName;
-                _tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "RANGE")?.AttributeName;
-            }
-            if (!isString(_tablePK)) {
-                throw new Error(`PK for table ${tableName} not found. Either pass it in the configuration file, or find out why the describeTableCommand failed`);
-            }
-            const scanResult = await scanTable(client, tableName);
-            if (!scanResult.success)
-                return scanResult;
-            const batches = chunk(scanResult.value, 25);
-            for (const [index, batch] of batches.entries()) {
-                try {
-                    const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
-                        RequestItems: {
-                            [tableName]: batch.map((item) => ({
-                                DeleteRequest: {
-                                    Key: {
-                                        [_tablePK]: item[_tablePK],
-                                        ...(_tableSK ? { [_tableSK]: item[_tableSK] } : {}),
-                                    },
-                                },
-                            })),
-                        },
-                    });
-                    // TODO: handle UnprocessedItems
-                    await client.send(command);
-                }
-                catch (err) {
-                    core.info(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, _tablePK, _tableSK).join(", ")}`);
-                    return resultFail(500, err);
-                }
-            }
+            const definedPrimaryKey = await getTablePrimaryKey(client, tableName, tablePrimaryKey);
+            await doPurgeTable(client, tableName, definedPrimaryKey);
         }
         core.info("DATA.length: " + data.length);
         const batches = chunk(data, 25);
@@ -56641,9 +56654,7 @@ const isString = (value) => typeof value === "string";
                 await client.send(command);
             }
             catch (err) {
-                core.info(`Failed batchWrite of target table at ${index + 1}/${batches.length}: ${(tablePK
-                    ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
-                    : batch).join(", ")}`);
+                core.info(`Failed batchWrite of target table at ${index + 1}/${batches.length}: ${batch.join(", ")}`);
                 return resultFail(500, err);
             }
         }
@@ -69153,7 +69164,7 @@ config(en());
 
 /* harmony default export */ const zod = (external_namespaceObject);
 
-;// CONCATENATED MODULE: ./src/type.ts
+;// CONCATENATED MODULE: ./src/utils/type.ts
 
 const baseAwsResourceParameterSchema = zod.object({
     region: zod.string(),
@@ -69170,10 +69181,13 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
     s3BucketName: zod.string(),
     s3Key: zod.string(),
 });
+const dynamoTablePrimaryKeySchema = zod.object({
+    pk: zod.string(),
+    sk: zod.string().optional(),
+});
 const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
     purgeTable: zod.boolean().optional(),
-    tablePK: zod.string().optional(),
-    tableSK: zod.string().optional(),
+    tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
 });
 const configSchema = zod.object({
     source: zod.discriminatedUnion("type", [
@@ -69187,6 +69201,7 @@ const configSchema = zod.object({
 });
 
 ;// CONCATENATED MODULE: ./src/index.ts
+
 
 
 
@@ -69234,7 +69249,11 @@ async function run() {
             throw new Error("Somehow, sourceData is null");
         }
         if (config.target.type === "dynamo") {
-            const { target: { accessKeyId, dynamoTableName, purgeTable, region, secretAccessKey, sessionToken, tablePK, tableSK, }, } = config;
+            if (!isArrayOfRecords(sourceData, 
+            // If source of data is "dynamo", than data is already an array of records, unless it has been altered by some middleware (functionality yet to be implemented)
+            config.source.type === "dynamo" || undefined))
+                throw new Error("Data to insert into dynamoDB table is malformed. Requires an array of records");
+            const { target: { accessKeyId, dynamoTableName, purgeTable, region, secretAccessKey, sessionToken, tablePrimaryKey, }, } = config;
             const targetDynamoResult = await target_dynamo({
                 accessKeyId,
                 region,
@@ -69242,8 +69261,7 @@ async function run() {
                 tableName: dynamoTableName,
                 purgeTable,
                 sessionToken,
-                tablePK,
-                tableSK,
+                tablePrimaryKey,
                 data: sourceData,
             });
             core.info("targetDynamoResult: " + JSON.stringify(targetDynamoResult, null, 2));
