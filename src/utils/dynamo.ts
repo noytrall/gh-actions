@@ -4,7 +4,7 @@ import {
   ScanCommand,
   type ScanCommandInput,
 } from "@aws-sdk/lib-dynamodb";
-import { resultFail, resultSuccess } from "./result.js";
+import { getErrorMessage } from "./errors.js";
 
 export const scanTable = async (
   client: DynamoDBDocumentClient,
@@ -26,17 +26,17 @@ export const scanTable = async (
 
       const result = await client.send(scanCommand);
 
-      if (!result.Items)
-        return resultFail(500, "Something has gone terribly wrong");
+      if (!result.Items) throw new Error("Something has gone terribly wrong");
 
       data.push(...result.Items);
 
       exclusiveLastKey = result.LastEvaluatedKey;
     } while (exclusiveLastKey);
 
-    return resultSuccess(data);
-  } catch (err) {
-    return resultFail("500", err);
+    return data;
+  } catch (error) {
+    core.error("scanTable: " + getErrorMessage(error));
+    throw error;
   }
 };
 

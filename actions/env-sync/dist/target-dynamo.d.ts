@@ -8,4 +8,4 @@ export default function ({ accessKeyId, region, secretAccessKey, tableName, sess
     purgeTable?: boolean;
     tablePrimaryKey: TargetDynamoParameters["tablePrimaryKey"];
     data: DynamoData;
-}): Promise<import("./utils/result.js").ResultFailure<500> | import("./utils/result.js").ResultFailure<"500"> | import("./utils/result.js").ResultSuccess<null>>;
+}): Promise<void>;

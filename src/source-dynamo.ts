@@ -1,7 +1,8 @@
+import * as core from "@actions/core";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { resultFail } from "./utils/result.js";
 import { scanTable } from "./utils/dynamo.js";
+import { getErrorMessage } from "./utils/errors.js";
 
 export default async function ({
   accessKeyId,
@@ -30,10 +31,8 @@ export default async function ({
     });
 
     return await scanTable(client, tableName);
-  } catch (err) {
-    return resultFail(
-      "500",
-      err instanceof Error ? err.message : (err as string)
-    );
+  } catch (error) {
+    core.error("source-dynamo: " + getErrorMessage(error));
+    throw error;
   }
 }

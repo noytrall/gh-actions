@@ -56467,27 +56467,31 @@ var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_nod
 var dist_cjs = __nccwpck_require__(4305);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
 var lib_dynamodb_dist_cjs = __nccwpck_require__(8907);
-;// CONCATENATED MODULE: ./src/utils/result.ts
-/**
- * Returns a ResultSuccess of type T.
- *
- * @param value the successful value
- */
-const resultSuccess = ((value) => ({
-    success: true,
-    value,
-}));
-/**
- * Returns a ResultFailure of type T.
- *
- * @param code the error code
- * @param message the error message
- */
-const resultFail = (code, error) => ({
-    success: false,
-    code,
-    message: error instanceof Error ? error.message : error,
-});
+;// CONCATENATED MODULE: ./src/utils/nodash.ts
+const chunk = (array, length) => {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += length)
+        chunks.push(array.slice(i, i + length));
+    return chunks;
+};
+const isString = (value) => typeof value === "string";
+const isArray = (value) => Array.isArray(value);
+const isRecord = (value) => value !== null && typeof value === "object" && !isArray(value);
+const isArrayOfRecords = (value, force) => {
+    if (force !== undefined)
+        return force;
+    return isArray(value) && value.every(isRecord);
+};
+
+;// CONCATENATED MODULE: ./src/utils/errors.ts
+
+function getErrorMessage(e) {
+    if (e instanceof Error)
+        return e.message;
+    if (isString(e))
+        return e;
+    return "Something happened";
+}
 
 ;// CONCATENATED MODULE: ./src/utils/dynamo.ts
 
@@ -56506,14 +56510,15 @@ const scanTable = async (client, tableName) => {
             const scanCommand = new lib_dynamodb_dist_cjs.ScanCommand(input);
             const result = await client.send(scanCommand);
             if (!result.Items)
-                return resultFail(500, "Something has gone terribly wrong");
+                throw new Error("Something has gone terribly wrong");
             data.push(...result.Items);
             exclusiveLastKey = result.LastEvaluatedKey;
         } while (exclusiveLastKey);
-        return resultSuccess(data);
+        return data;
     }
-    catch (err) {
-        return resultFail("500", err);
+    catch (error) {
+        core.error("scanTable: " + getErrorMessage(error));
+        throw error;
     }
 };
 function mapDynamoItemsToPkSk(data, pk, sk) {
@@ -56524,6 +56529,7 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
 }
 
 ;// CONCATENATED MODULE: ./src/source-dynamo.ts
+
 
 
 
@@ -56543,26 +56549,11 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
         });
         return await scanTable(client, tableName);
     }
-    catch (err) {
-        return resultFail("500", err instanceof Error ? err.message : err);
+    catch (error) {
+        core.error("source-dynamo: " + getErrorMessage(error));
+        throw error;
     }
 }
-
-;// CONCATENATED MODULE: ./src/utils/nodash.ts
-const chunk = (array, length) => {
-    const chunks = [];
-    for (let i = 0; i < array.length; i += length)
-        chunks.push(array.slice(i, i + length));
-    return chunks;
-};
-const isString = (value) => typeof value === "string";
-const isArray = (value) => Array.isArray(value);
-const isRecord = (value) => value !== null && typeof value === "object" && !isArray(value);
-const isArrayOfRecords = (value, force) => {
-    if (force !== undefined)
-        return force;
-    return isArray(value) && value.every(isRecord);
-};
 
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
 
@@ -56578,22 +56569,26 @@ const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
     const describeCommand = new dist_cjs.DescribeTableCommand({
         TableName: tableName,
     });
-    const describeResult = await client.send(describeCommand);
-    if (!describeResult.Table) {
-        throw new Error("Error in DescribeTableCommand. Table attribute not defined");
+    try {
+        const describeResult = await client.send(describeCommand);
+        if (!describeResult.Table) {
+            throw new Error("Table attribute not defined");
+        }
+        const tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "HASH")?.AttributeName;
+        const tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "RANGE")?.AttributeName;
+        if (!tablePK)
+            throw new Error("No PK found for table " + tableName);
+        return { pk: tablePK, sk: tableSK };
     }
-    const tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "HASH")?.AttributeName;
-    const tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "RANGE")?.AttributeName;
-    if (!tablePK)
-        throw new Error("No PK found for table " + tableName);
-    return { pk: tablePK, sk: tableSK };
+    catch (err) {
+        core.error("Error in DescribeTableCommand. " + getErrorMessage(err));
+        throw err;
+    }
 };
 const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
     const scanResult = await scanTable(client, tableName);
-    if (!scanResult.success)
-        return scanResult;
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-    const batches = chunk(scanResult.value, 25);
+    const batches = chunk(scanResult, 25);
     for (const [index, batch] of batches.entries()) {
         try {
             const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
@@ -56612,12 +56607,33 @@ const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
             await client.send(command);
         }
         catch (err) {
-            core.info(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
-            return resultFail(500, err);
+            core.error(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
+            throw err;
         }
     }
 };
-const populateTable = async (client) => { };
+const populateTable = async (client, tableName, data) => {
+    const batches = chunk(data, 25);
+    for (const batch of batches) {
+        try {
+            const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
+                RequestItems: {
+                    [tableName]: batch.map((item) => ({
+                        PutRequest: {
+                            Item: item,
+                        },
+                    })),
+                },
+            });
+            // TODO: handle UnprocessedItems
+            await client.send(command);
+        }
+        catch (error) {
+            core.error("populateTable: " + getErrorMessage(error));
+            throw error;
+        }
+    }
+};
 /* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePrimaryKey, data, }) {
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
@@ -56638,32 +56654,11 @@ const populateTable = async (client) => { };
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, tableName, definedPrimaryKey);
         }
-        core.info("DATA.length: " + data.length);
-        const batches = chunk(data, 25);
-        core.info("BATCHES.length: " + batches.length);
-        for (const [index, batch] of batches.entries()) {
-            try {
-                const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
-                    RequestItems: {
-                        [tableName]: batch.map((item) => ({
-                            PutRequest: {
-                                Item: item,
-                            },
-                        })),
-                    },
-                });
-                // TODO: handle UnprocessedItems
-                await client.send(command);
-            }
-            catch (err) {
-                core.info(`Failed batchWrite of target table at ${index + 1}/${batches.length}: ${batch.join(", ")}`);
-                return resultFail(500, err);
-            }
-        }
-        return resultSuccess(null);
+        await populateTable(client, tableName, data);
     }
-    catch (err) {
-        return resultFail("500", err);
+    catch (error) {
+        core.error("target-dynamo: " + getErrorMessage(error));
+        throw error;
     }
 }
 
@@ -69210,6 +69205,7 @@ const configSchema = zod.object({
 
 
 
+
 async function run() {
     try {
         const configPath = core.getInput("config-path", { required: true });
@@ -69239,10 +69235,7 @@ async function run() {
                 tableName: dynamoTableName,
                 sessionToken,
             });
-            if (!sourceDynamoResult.success) {
-                throw new Error(sourceDynamoResult.message);
-            }
-            sourceData = sourceDynamoResult.value;
+            sourceData = sourceDynamoResult;
         }
         else if (config.source.type === "s3") {
         }
@@ -69266,15 +69259,10 @@ async function run() {
                 tablePrimaryKey,
                 data: sourceData,
             });
-            core.info("targetDynamoResult: " + JSON.stringify(targetDynamoResult, null, 2));
-            if (!targetDynamoResult.success) {
-                throw new Error(targetDynamoResult.message);
-            }
         }
     }
     catch (error) {
-        const message = typeof error === "string" ? error : error.message;
-        core.setFailed(message);
+        core.setFailed(getErrorMessage(error));
     }
 }
 run();

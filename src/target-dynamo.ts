@@ -5,8 +5,8 @@ import {
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
 import { mapDynamoItemsToPkSk, scanTable } from "./utils/dynamo.js";
+import { getErrorMessage } from "./utils/errors.js";
 import { chunk } from "./utils/nodash.js";
-import { resultFail, resultSuccess } from "./utils/result.js";
 import type {
   DynamoData,
   DynamoTablePrimaryKey,
@@ -24,24 +24,27 @@ const getTablePrimaryKey = async (
   const describeCommand = new DescribeTableCommand({
     TableName: tableName,
   });
-  const describeResult = await client.send(describeCommand);
+  try {
+    const describeResult = await client.send(describeCommand);
 
-  if (!describeResult.Table) {
-    throw new Error(
-      "Error in DescribeTableCommand. Table attribute not defined"
-    );
+    if (!describeResult.Table) {
+      throw new Error("Table attribute not defined");
+    }
+
+    const tablePK = describeResult.Table.KeySchema?.find(
+      (ks) => ks.KeyType === "HASH"
+    )?.AttributeName;
+    const tableSK = describeResult.Table.KeySchema?.find(
+      (ks) => ks.KeyType === "RANGE"
+    )?.AttributeName;
+
+    if (!tablePK) throw new Error("No PK found for table " + tableName);
+
+    return { pk: tablePK, sk: tableSK };
+  } catch (err) {
+    core.error("Error in DescribeTableCommand. " + getErrorMessage(err));
+    throw err;
   }
-
-  const tablePK = describeResult.Table.KeySchema?.find(
-    (ks) => ks.KeyType === "HASH"
-  )?.AttributeName;
-  const tableSK = describeResult.Table.KeySchema?.find(
-    (ks) => ks.KeyType === "RANGE"
-  )?.AttributeName;
-
-  if (!tablePK) throw new Error("No PK found for table " + tableName);
-
-  return { pk: tablePK, sk: tableSK };
 };
 
 const doPurgeTable = async (
@@ -51,10 +54,8 @@ const doPurgeTable = async (
 ) => {
   const scanResult = await scanTable(client, tableName);
 
-  if (!scanResult.success) return scanResult;
-
   const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-  const batches = chunk(scanResult.value, 25);
+  const batches = chunk(scanResult, 25);
 
   for (const [index, batch] of batches.entries()) {
     try {
@@ -73,17 +74,42 @@ const doPurgeTable = async (
       // TODO: handle UnprocessedItems
       await client.send(command);
     } catch (err) {
-      core.info(
+      core.error(
         `Failed purge of target table at ${index + 1}/${
           batches.length
         }: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`
       );
-      return resultFail(500, err);
+      throw err;
     }
   }
 };
 
-const populateTable = async (client: DynamoDBDocumentClient) => {};
+const populateTable = async (
+  client: DynamoDBDocumentClient,
+  tableName: string,
+  data: DynamoData
+) => {
+  const batches = chunk(data, 25);
+
+  for (const batch of batches) {
+    try {
+      const command = new BatchWriteCommand({
+        RequestItems: {
+          [tableName]: batch.map((item) => ({
+            PutRequest: {
+              Item: item,
+            },
+          })),
+        },
+      });
+      // TODO: handle UnprocessedItems
+      await client.send(command);
+    } catch (error) {
+      core.error("populateTable: " + getErrorMessage(error));
+      throw error;
+    }
+  }
+};
 
 export default async function ({
   accessKeyId,
@@ -133,35 +159,9 @@ export default async function ({
       await doPurgeTable(client, tableName, definedPrimaryKey);
     }
 
-    core.info("DATA.length: " + data.length);
-    const batches = chunk(data, 25);
-
-    core.info("BATCHES.length: " + batches.length);
-
-    for (const [index, batch] of batches.entries()) {
-      try {
-        const command = new BatchWriteCommand({
-          RequestItems: {
-            [tableName]: batch.map((item) => ({
-              PutRequest: {
-                Item: item,
-              },
-            })),
-          },
-        });
-        // TODO: handle UnprocessedItems
-        await client.send(command);
-      } catch (err) {
-        core.info(
-          `Failed batchWrite of target table at ${index + 1}/${
-            batches.length
-          }: ${batch.join(", ")}`
-        );
-        return resultFail(500, err);
-      }
-    }
-    return resultSuccess(null);
-  } catch (err) {
-    return resultFail("500", err);
+    await populateTable(client, tableName, data);
+  } catch (error) {
+    core.error("target-dynamo: " + getErrorMessage(error));
+    throw error;
   }
 }

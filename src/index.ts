@@ -3,8 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import sourceDynamo from "./source-dynamo.js";
 import targetDynamo from "./target-dynamo.js";
+import { getErrorMessage } from "./utils/errors.js";
+import { isArrayOfRecords } from "./utils/nodash.js";
 import { configSchema, type Config } from "./utils/type.js";
-import { isArray, isArrayOfRecords } from "./utils/nodash.js";
 
 async function run() {
   try {
@@ -51,11 +52,7 @@ async function run() {
         sessionToken,
       });
 
-      if (!sourceDynamoResult.success) {
-        throw new Error(sourceDynamoResult.message);
-      }
-
-      sourceData = sourceDynamoResult.value;
+      sourceData = sourceDynamoResult;
     } else if (config.source.type === "s3") {
     }
 
@@ -97,17 +94,9 @@ async function run() {
         tablePrimaryKey,
         data: sourceData,
       });
-      core.info(
-        "targetDynamoResult: " + JSON.stringify(targetDynamoResult, null, 2)
-      );
-      if (!targetDynamoResult.success) {
-        throw new Error(targetDynamoResult.message);
-      }
     }
   } catch (error) {
-    const message =
-      typeof error === "string" ? error : (error as Error).message;
-    core.setFailed(message);
+    core.setFailed(getErrorMessage(error));
   }
 }
 
