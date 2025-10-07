@@ -56574,6 +56574,7 @@ const isArrayOfRecords = (value, force) => {
 const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
     if (tablePrimaryKey)
         return tablePrimaryKey;
+    core.info("Running DescribeTableCommand on table: " + tableName);
     const describeCommand = new dist_cjs.DescribeTableCommand({
         TableName: tableName,
     });
@@ -56632,7 +56633,7 @@ const populateTable = async (client) => { };
         });
         // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
         if (purgeTable) {
-            core.info("PURGE TABLE");
+            core.info("Purging Table: " + tableName);
             const definedPrimaryKey = await getTablePrimaryKey(client, tableName, tablePrimaryKey);
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, tableName, definedPrimaryKey);
