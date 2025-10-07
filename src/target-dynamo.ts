@@ -75,9 +75,18 @@ const doPurgeTable = async (
       await client.send(command);
     } catch (error) {
       console.log(error);
+      const message = getErrorMessage(error);
       core.error(
-        `Failed purge of target table at ${index + 1}/${batches.length}: ` +
-          getErrorMessage(error)
+        `Failed purge of target table at ${index + 1}/${
+          batches.length
+        }: ${message};${
+          message === "The provided key element does not match the schema"
+            ? ` key provided: ${{
+                [tablePK]: tablePK,
+                ...(tableSK ? { [tableSK]: tableSK } : {}),
+              }}`
+            : ""
+        }`
       );
       throw error;
     }
