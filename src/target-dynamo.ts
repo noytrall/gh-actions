@@ -20,6 +20,7 @@ const getTablePrimaryKey = async (
 ): Promise<DynamoTablePrimaryKey> => {
   if (tablePrimaryKey) return tablePrimaryKey;
 
+  core.info("Running DescribeTableCommand on table: " + tableName);
   const describeCommand = new DescribeTableCommand({
     TableName: tableName,
   });
@@ -118,7 +119,7 @@ export default async function ({
 
     // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
     if (purgeTable) {
-      core.info("PURGE TABLE");
+      core.info("Purging Table: " + tableName);
       const definedPrimaryKey = await getTablePrimaryKey(
         client,
         tableName,
