@@ -1,11 +1,12 @@
+import * as core from "@actions/core";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { resultFail, resultSuccess } from "./utils/result.js";
 import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
 import { mapDynamoItemsToPkSk, scanTable } from "./utils/dynamo.js";
 import { chunk } from "./utils/nodash.js";
+import { resultFail, resultSuccess } from "./utils/result.js";
 
 export default async function ({
   accessKeyId,
@@ -66,7 +67,7 @@ export default async function ({
           // TODO: handle UnprocessedItems
           await client.send(command);
         } catch (err) {
-          console.log(
+          core.info(
             `Failed purge of target table at ${index + 1}/${
               batches.length
             }: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`
@@ -76,10 +77,10 @@ export default async function ({
       }
     }
 
-    console.log("DATA.length", data.length);
+    core.info("DATA.length: " + data.length);
     const batches = chunk(data, 25);
 
-    console.log("BATCHES.length", batches.length);
+    core.info("BATCHES.length: " + batches.length);
 
     for (const [index, batch] of batches.entries()) {
       try {
@@ -95,7 +96,7 @@ export default async function ({
         // TODO: handle UnprocessedItems
         await client.send(command);
       } catch (err) {
-        console.log(
+        core.info(
           `Failed batchWrite of target table at ${index + 1}/${
             batches.length
           }: ${(tablePK

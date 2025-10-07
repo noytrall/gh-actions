@@ -56463,6 +56463,179 @@ var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+// EXTERNAL MODULE: ./node_modules/@aws-sdk/client-dynamodb/dist-cjs/index.js
+var dist_cjs = __nccwpck_require__(4305);
+// EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
+var lib_dynamodb_dist_cjs = __nccwpck_require__(8907);
+;// CONCATENATED MODULE: ./src/utils/result.ts
+/**
+ * Returns a ResultSuccess of type T.
+ *
+ * @param value the successful value
+ */
+const resultSuccess = ((value) => ({
+    success: true,
+    value,
+}));
+/**
+ * Returns a ResultFailure of type T.
+ *
+ * @param code the error code
+ * @param message the error message
+ */
+const resultFail = (code, error) => ({
+    success: false,
+    code,
+    message: error instanceof Error ? error.message : error,
+});
+
+;// CONCATENATED MODULE: ./src/utils/dynamo.ts
+
+
+
+const scanTable = async (client, tableName) => {
+    try {
+        let exclusiveLastKey = undefined;
+        const data = [];
+        do {
+            const input = {
+                TableName: tableName,
+                ExclusiveStartKey: exclusiveLastKey,
+            };
+            const scanCommand = new lib_dynamodb_dist_cjs.ScanCommand(input);
+            const result = await client.send(scanCommand);
+            if (!result.Items)
+                return resultFail(500, "Something has gone terribly wrong");
+            data.push(...result.Items);
+            exclusiveLastKey = result.LastEvaluatedKey;
+            core.info("LastEvaludatedKey: " + result.LastEvaluatedKey);
+        } while (exclusiveLastKey);
+        return resultSuccess(data);
+    }
+    catch (err) {
+        return resultFail("500", err);
+    }
+};
+function mapDynamoItemsToPkSk(data, pk, sk) {
+    const fn = sk
+        ? (item) => ({ [pk]: item[pk], [sk]: item[sk] })
+        : (item) => ({ [pk]: item[pk] });
+    return data.map(fn);
+}
+
+;// CONCATENATED MODULE: ./src/source-dynamo.ts
+
+
+
+
+/* harmony default export */ async function source_dynamo({ accessKeyId, region, secretAccessKey, sessionToken, tableName, }) {
+    try {
+        const dynamodbClient = new dist_cjs.DynamoDBClient({
+            region,
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+                sessionToken: sessionToken,
+            },
+        });
+        const client = lib_dynamodb_dist_cjs.DynamoDBDocumentClient.from(dynamodbClient, {
+            marshallOptions: { removeUndefinedValues: true },
+        });
+        return await scanTable(client, tableName);
+    }
+    catch (err) {
+        return resultFail("500", err instanceof Error ? err.message : err);
+    }
+}
+
+;// CONCATENATED MODULE: ./src/utils/nodash.ts
+const chunk = (array, length) => {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += length)
+        chunks.push(array.slice(i, i + length));
+    return chunks;
+};
+
+;// CONCATENATED MODULE: ./src/target-dynamo.ts
+
+
+
+
+
+
+/* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePK, tableSK, data, }) {
+    try {
+        const dynamodbClient = new dist_cjs.DynamoDBClient({
+            region,
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+                sessionToken,
+            },
+        });
+        const client = lib_dynamodb_dist_cjs.DynamoDBDocumentClient.from(dynamodbClient, {
+            marshallOptions: { removeUndefinedValues: true },
+        });
+        // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
+        if (purgeTable && tablePK) {
+            const scanResult = await scanTable(client, tableName);
+            if (!scanResult.success)
+                return scanResult;
+            const batches = chunk(scanResult.value, 25);
+            for (const [index, batch] of batches.entries()) {
+                try {
+                    const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
+                        RequestItems: {
+                            [tableName]: batch.map((item) => ({
+                                DeleteRequest: {
+                                    Key: {
+                                        [tablePK]: item[tablePK],
+                                        ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                                    },
+                                },
+                            })),
+                        },
+                    });
+                    // TODO: handle UnprocessedItems
+                    await client.send(command);
+                }
+                catch (err) {
+                    core.info(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
+                    return resultFail(500, err);
+                }
+            }
+        }
+        core.info("DATA.length: " + data.length);
+        const batches = chunk(data, 25);
+        core.info("BATCHES.length: " + batches.length);
+        for (const [index, batch] of batches.entries()) {
+            try {
+                const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
+                    RequestItems: {
+                        [tableName]: batch.map((item) => ({
+                            PutRequest: {
+                                Item: item,
+                            },
+                        })),
+                    },
+                });
+                // TODO: handle UnprocessedItems
+                await client.send(command);
+            }
+            catch (err) {
+                core.info(`Failed batchWrite of target table at ${index + 1}/${batches.length}: ${(tablePK
+                    ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
+                    : batch).join(", ")}`);
+                return resultFail(500, err);
+            }
+        }
+        return resultSuccess(null);
+    }
+    catch (err) {
+        return resultFail("500", err);
+    }
+}
+
 ;// CONCATENATED MODULE: ./node_modules/zod/v4/core/core.js
 /** A special constant with type `never` */
 const NEVER = Object.freeze({
@@ -69004,177 +69177,6 @@ const configSchema = zod.object({
     ]),
 });
 
-// EXTERNAL MODULE: ./node_modules/@aws-sdk/client-dynamodb/dist-cjs/index.js
-var dist_cjs = __nccwpck_require__(4305);
-// EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
-var lib_dynamodb_dist_cjs = __nccwpck_require__(8907);
-;// CONCATENATED MODULE: ./src/utils/result.ts
-/**
- * Returns a ResultSuccess of type T.
- *
- * @param value the successful value
- */
-const resultSuccess = ((value) => ({
-    success: true,
-    value,
-}));
-/**
- * Returns a ResultFailure of type T.
- *
- * @param code the error code
- * @param message the error message
- */
-const resultFail = (code, error) => ({
-    success: false,
-    code,
-    message: error instanceof Error ? error.message : error,
-});
-
-;// CONCATENATED MODULE: ./src/utils/dynamo.ts
-
-
-const scanTable = async (client, tableName) => {
-    try {
-        let exclusiveLastKey = undefined;
-        const data = [];
-        do {
-            const input = {
-                TableName: tableName,
-                ExclusiveStartKey: exclusiveLastKey,
-            };
-            const scanCommand = new lib_dynamodb_dist_cjs.ScanCommand(input);
-            const result = await client.send(scanCommand);
-            if (!result.Items)
-                return resultFail(500, "Something has gone terribly wrong");
-            data.push(...result.Items);
-            exclusiveLastKey = result.LastEvaluatedKey;
-            console.log(result.LastEvaluatedKey);
-        } while (exclusiveLastKey);
-        return resultSuccess(data);
-    }
-    catch (err) {
-        return resultFail("500", err);
-    }
-};
-function mapDynamoItemsToPkSk(data, pk, sk) {
-    const fn = sk
-        ? (item) => ({ [pk]: item[pk], [sk]: item[sk] })
-        : (item) => ({ [pk]: item[pk] });
-    return data.map(fn);
-}
-
-;// CONCATENATED MODULE: ./src/source-dynamo.ts
-
-
-
-
-/* harmony default export */ async function source_dynamo({ accessKeyId, region, secretAccessKey, sessionToken, tableName, }) {
-    try {
-        const dynamodbClient = new dist_cjs.DynamoDBClient({
-            region,
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken: sessionToken,
-            },
-        });
-        const client = lib_dynamodb_dist_cjs.DynamoDBDocumentClient.from(dynamodbClient, {
-            marshallOptions: { removeUndefinedValues: true },
-        });
-        return await scanTable(client, tableName);
-    }
-    catch (err) {
-        return resultFail("500", err instanceof Error ? err.message : err);
-    }
-}
-
-;// CONCATENATED MODULE: ./src/utils/nodash.ts
-const chunk = (array, length) => {
-    const chunks = [];
-    for (let i = 0; i < array.length; i += length)
-        chunks.push(array.slice(i, i + length));
-    return chunks;
-};
-
-;// CONCATENATED MODULE: ./src/target-dynamo.ts
-
-
-
-
-
-/* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePK, tableSK, data, }) {
-    try {
-        const dynamodbClient = new dist_cjs.DynamoDBClient({
-            region,
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken,
-            },
-        });
-        const client = lib_dynamodb_dist_cjs.DynamoDBDocumentClient.from(dynamodbClient, {
-            marshallOptions: { removeUndefinedValues: true },
-        });
-        // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
-        if (purgeTable && tablePK) {
-            const scanResult = await scanTable(client, tableName);
-            if (!scanResult.success)
-                return scanResult;
-            const batches = chunk(scanResult.value, 25);
-            for (const [index, batch] of batches.entries()) {
-                try {
-                    const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
-                        RequestItems: {
-                            [tableName]: batch.map((item) => ({
-                                DeleteRequest: {
-                                    Key: {
-                                        [tablePK]: item[tablePK],
-                                        ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
-                                    },
-                                },
-                            })),
-                        },
-                    });
-                    // TODO: handle UnprocessedItems
-                    await client.send(command);
-                }
-                catch (err) {
-                    console.log(`Failed purge of target table at ${index + 1}/${batches.length}: ${mapDynamoItemsToPkSk(batch, tablePK, tableSK).join(", ")}`);
-                    return resultFail(500, err);
-                }
-            }
-        }
-        console.log("DATA.length", data.length);
-        const batches = chunk(data, 25);
-        console.log("BATCHES.length", batches.length);
-        for (const [index, batch] of batches.entries()) {
-            try {
-                const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
-                    RequestItems: {
-                        [tableName]: batch.map((item) => ({
-                            PutRequest: {
-                                Item: item,
-                            },
-                        })),
-                    },
-                });
-                // TODO: handle UnprocessedItems
-                await client.send(command);
-            }
-            catch (err) {
-                console.log(`Failed batchWrite of target table at ${index + 1}/${batches.length}: ${(tablePK
-                    ? mapDynamoItemsToPkSk(batch, tablePK, tableSK)
-                    : batch).join(", ")}`);
-                return resultFail(500, err);
-            }
-        }
-        return resultSuccess(null);
-    }
-    catch (err) {
-        return resultFail("500", err);
-    }
-}
-
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
@@ -69185,13 +69187,12 @@ const chunk = (array, length) => {
 async function run() {
     try {
         const configPath = core.getInput("config-path", { required: true });
-        console.log("configPath", configPath);
-        console.log("GITHUB_WORKSPACE", process.env.GITHUB_WORKSPACE);
+        core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
+        core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE);
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
-        console.log("fullPath", fullPath);
+        core.info("fullPath: " + fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const result = configSchema.safeParse(config);
-        console.log("result :>> ", result);
         if (result.error) {
             throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
@@ -69229,15 +69230,15 @@ async function run() {
                 tableSK,
                 data: sourceData,
             });
-            console.log("targetDynamoResult", JSON.stringify(targetDynamoResult, null, 2));
+            core.info("targetDynamoResult: " + JSON.stringify(targetDynamoResult, null, 2));
             if (!targetDynamoResult.success) {
                 throw new Error(targetDynamoResult.message);
             }
         }
     }
     catch (error) {
-        console.log(typeof error === "string" ? error : error.message);
-        throw error;
+        const message = typeof error === "string" ? error : error.message;
+        core.setFailed(message);
     }
 }
 run();

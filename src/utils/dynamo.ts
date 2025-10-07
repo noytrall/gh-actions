@@ -1,3 +1,4 @@
+import * as core from "@actions/core";
 import {
   DynamoDBDocumentClient,
   ScanCommand,
@@ -30,7 +31,7 @@ export const scanTable = async (
       data.push(...result.Items);
 
       exclusiveLastKey = result.LastEvaluatedKey;
-      console.log(result.LastEvaluatedKey);
+      core.info("LastEvaludatedKey: " + result.LastEvaluatedKey);
     } while (exclusiveLastKey);
 
     return resultSuccess(data);

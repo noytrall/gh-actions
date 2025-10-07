@@ -1,23 +1,21 @@
 import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
-import { configSchema, type Config } from "./type.js";
 import sourceDynamo from "./source-dynamo.js";
 import targetDynamo from "./target-dynamo.js";
+import { configSchema, type Config } from "./type.js";
 
 async function run() {
   try {
     const configPath = core.getInput("config-path", { required: true });
-    console.log("configPath", configPath);
-    console.log("GITHUB_WORKSPACE", process.env.GITHUB_WORKSPACE!);
+    core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
+    core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE!);
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
-    console.log("fullPath", fullPath);
+    core.info("fullPath: " + fullPath);
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
     const result = configSchema.safeParse(config);
-
-    console.log("result :>> ", result);
 
     if (result.error) {
       throw new Error(JSON.stringify(result.error.issues, null, 2));
@@ -80,17 +78,17 @@ async function run() {
         tableSK,
         data: sourceData,
       });
-      console.log(
-        "targetDynamoResult",
-        JSON.stringify(targetDynamoResult, null, 2)
+      core.info(
+        "targetDynamoResult: " + JSON.stringify(targetDynamoResult, null, 2)
       );
       if (!targetDynamoResult.success) {
         throw new Error(targetDynamoResult.message);
       }
     }
   } catch (error) {
-    console.log(typeof error === "string" ? error : (error as Error).message);
-    throw error;
+    const message =
+      typeof error === "string" ? error : (error as Error).message;
+    core.setFailed(message);
   }
 }
 
