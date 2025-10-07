@@ -56578,7 +56578,6 @@ const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
         TableName: tableName,
     });
     const describeResult = await client.send(describeCommand);
-    core.info("describeResult: " + JSON.stringify(describeResult, null, 2));
     if (!describeResult.Table) {
         throw new Error("Error in DescribeTableCommand. Table attribute not defined");
     }
@@ -56633,7 +56632,9 @@ const populateTable = async (client) => { };
         });
         // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
         if (purgeTable) {
+            core.info("PURGE TABLE");
             const definedPrimaryKey = await getTablePrimaryKey(client, tableName, tablePrimaryKey);
+            core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, tableName, definedPrimaryKey);
         }
         core.info("DATA.length: " + data.length);
