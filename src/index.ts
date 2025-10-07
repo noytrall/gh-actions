@@ -17,6 +17,8 @@ async function run() {
 
     const result = configSchema.safeParse(config);
 
+    core.info("parseResult: " + JSON.stringify(result, null, 2));
+
     if (result.error) {
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
