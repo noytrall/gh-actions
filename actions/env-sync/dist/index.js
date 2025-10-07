@@ -56611,8 +56611,8 @@ const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
             const message = getErrorMessage(error);
             core.error(`Failed purge of target table at ${index + 1}/${batches.length}: ${message};${message === "The provided key element does not match the schema"
                 ? ` key provided: ${JSON.stringify({
-                    [tablePK]: tablePK,
-                    ...(tableSK ? { [tableSK]: tableSK } : {}),
+                    pk: tablePK,
+                    ...(tableSK ? { sk: tableSK } : {}),
                 })}`
                 : ""}`);
             throw error;
