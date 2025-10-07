@@ -3,20 +3,15 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
+import type { BaseDynamoParameters } from "./utils/type.js";
 
 export default async function ({
   accessKeyId,
   region,
   secretAccessKey,
   sessionToken,
-  tableName,
-}: {
-  region: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  sessionToken: string;
-  tableName: string;
-}) {
+  dynamoTableName,
+}: Omit<BaseDynamoParameters, "type">) {
   try {
     const dynamodbClient = new DynamoDBClient({
       region,
@@ -30,7 +25,7 @@ export default async function ({
       marshallOptions: { removeUndefinedValues: true },
     });
 
-    return await scanTable(client, tableName);
+    return await scanTable(client, dynamoTableName);
   } catch (error) {
     core.error("source-dynamo: " + getErrorMessage(error));
     throw error;

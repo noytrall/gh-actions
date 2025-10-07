@@ -72,14 +72,14 @@ const baseDynamoParametersSchema = baseAwsResourceParameterSchema.extend({
   type: z.literal("dynamo"),
   dynamoTableName: z.string(),
 });
-type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
+export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
 
 const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
   type: z.literal("s3"),
   s3BucketName: z.string(),
   s3Key: z.string(),
 });
-type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
+export type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
 
 const dynamoTablePrimaryKeySchema = z.object({
   pk: z.string(),

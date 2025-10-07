@@ -4,7 +4,7 @@ import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
-import { mapDynamoItemsToPkSk, scanTable } from "./utils/dynamo.js";
+import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
 import { chunk } from "./utils/nodash.js";
 import type {
@@ -15,14 +15,14 @@ import type {
 
 const getTablePrimaryKey = async (
   client: DynamoDBDocumentClient,
-  tableName: string,
+  dynamoTableName: string,
   tablePrimaryKey: TargetDynamoParameters["tablePrimaryKey"]
 ): Promise<DynamoTablePrimaryKey> => {
   if (tablePrimaryKey) return tablePrimaryKey;
 
-  core.info("Running DescribeTableCommand on table: " + tableName);
+  core.info("Running DescribeTableCommand on table: " + dynamoTableName);
   const describeCommand = new DescribeTableCommand({
-    TableName: tableName,
+    TableName: dynamoTableName,
   });
   try {
     const describeResult = await client.send(describeCommand);
@@ -38,7 +38,7 @@ const getTablePrimaryKey = async (
       (ks) => ks.KeyType === "RANGE"
     )?.AttributeName;
 
-    if (!tablePK) throw new Error("No PK found for table " + tableName);
+    if (!tablePK) throw new Error("No PK found for table " + dynamoTableName);
 
     return { pk: tablePK, sk: tableSK };
   } catch (err) {
@@ -49,10 +49,10 @@ const getTablePrimaryKey = async (
 
 const doPurgeTable = async (
   client: DynamoDBDocumentClient,
-  tableName: string,
+  dynamoTableName: string,
   tablePrimaryKey: DynamoTablePrimaryKey
 ) => {
-  const scanResult = await scanTable(client, tableName);
+  const scanResult = await scanTable(client, dynamoTableName);
 
   const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
   const batches = chunk(scanResult, 25);
@@ -61,7 +61,7 @@ const doPurgeTable = async (
     try {
       const command = new BatchWriteCommand({
         RequestItems: {
-          [tableName]: batch.map((item) => ({
+          [dynamoTableName]: batch.map((item) => ({
             DeleteRequest: {
               Key: {
                 [tablePK]: item[tablePK],
@@ -94,7 +94,7 @@ const doPurgeTable = async (
 
 const populateTable = async (
   client: DynamoDBDocumentClient,
-  tableName: string,
+  dynamoTableName: string,
   data: DynamoData
 ) => {
   const batches = chunk(data, 25);
@@ -103,7 +103,7 @@ const populateTable = async (
     try {
       const command = new BatchWriteCommand({
         RequestItems: {
-          [tableName]: batch.map((item) => ({
+          [dynamoTableName]: batch.map((item) => ({
             PutRequest: {
               Item: item,
             },
@@ -123,19 +123,12 @@ export default async function ({
   accessKeyId,
   region,
   secretAccessKey,
-  tableName,
+  dynamoTableName,
   sessionToken,
   purgeTable,
   tablePrimaryKey,
   data,
-}: {
-  region: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  tableName: string;
-  sessionToken: string;
-  purgeTable?: boolean;
-  tablePrimaryKey: TargetDynamoParameters["tablePrimaryKey"];
+}: Omit<TargetDynamoParameters, "type"> & {
   data: DynamoData;
 }) {
   try {
@@ -153,10 +146,10 @@ export default async function ({
 
     // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
     if (purgeTable) {
-      core.info("Purging Table: " + tableName);
+      core.info("Purging Table: " + dynamoTableName);
       const definedPrimaryKey = await getTablePrimaryKey(
         client,
-        tableName,
+        dynamoTableName,
         tablePrimaryKey
       );
 
@@ -164,10 +157,10 @@ export default async function ({
         "definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2)
       );
 
-      await doPurgeTable(client, tableName, definedPrimaryKey);
+      await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
     }
 
-    await populateTable(client, tableName, data);
+    await populateTable(client, dynamoTableName, data);
   } catch (error) {
     core.error("target-dynamo: " + getErrorMessage(error));
     throw error;

@@ -1,11 +1,4 @@
 import type { DynamoData, TargetDynamoParameters } from "./utils/type.js";
-export default function ({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePrimaryKey, data, }: {
-    region: string;
-    accessKeyId: string;
-    secretAccessKey: string;
-    tableName: string;
-    sessionToken: string;
-    purgeTable?: boolean;
-    tablePrimaryKey: TargetDynamoParameters["tablePrimaryKey"];
+export default function ({ accessKeyId, region, secretAccessKey, dynamoTableName, sessionToken, purgeTable, tablePrimaryKey, data, }: Omit<TargetDynamoParameters, "type"> & {
     data: DynamoData;
 }): Promise<void>;

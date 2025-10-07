@@ -45,15 +45,13 @@ async function run() {
           sessionToken,
         },
       } = config;
-      const sourceDynamoResult = await sourceDynamo({
+      sourceData = await sourceDynamo({
         region,
         accessKeyId,
         secretAccessKey,
-        tableName: dynamoTableName,
+        dynamoTableName,
         sessionToken,
       });
-
-      sourceData = sourceDynamoResult;
     } else if (config.source.type === "s3") {
     }
 
@@ -85,11 +83,11 @@ async function run() {
           tablePrimaryKey,
         },
       } = config;
-      const targetDynamoResult = await targetDynamo({
+      await targetDynamo({
         accessKeyId,
         region,
         secretAccessKey,
-        tableName: dynamoTableName,
+        dynamoTableName,
         purgeTable,
         sessionToken,
         tablePrimaryKey,

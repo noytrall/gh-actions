@@ -1,4 +1,23 @@
 import z from "zod";
+declare const baseDynamoParametersSchema: z.ZodObject<{
+    region: z.ZodString;
+    accessKeyId: z.ZodString;
+    secretAccessKey: z.ZodString;
+    sessionToken: z.ZodString;
+    type: z.ZodLiteral<"dynamo">;
+    dynamoTableName: z.ZodString;
+}, z.z.core.$strip>;
+export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
+declare const baseS3ParametersSchema: z.ZodObject<{
+    region: z.ZodString;
+    accessKeyId: z.ZodString;
+    secretAccessKey: z.ZodString;
+    sessionToken: z.ZodString;
+    type: z.ZodLiteral<"s3">;
+    s3BucketName: z.ZodString;
+    s3Key: z.ZodString;
+}, z.z.core.$strip>;
+export type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
 declare const dynamoTablePrimaryKeySchema: z.ZodObject<{
     pk: z.ZodString;
     sk: z.ZodOptional<z.ZodString>;

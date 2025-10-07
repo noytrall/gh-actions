@@ -56534,7 +56534,7 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
 
 
 
-/* harmony default export */ async function source_dynamo({ accessKeyId, region, secretAccessKey, sessionToken, tableName, }) {
+/* harmony default export */ async function source_dynamo({ accessKeyId, region, secretAccessKey, sessionToken, dynamoTableName, }) {
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
@@ -56547,7 +56547,7 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
         const client = lib_dynamodb_dist_cjs.DynamoDBDocumentClient.from(dynamodbClient, {
             marshallOptions: { removeUndefinedValues: true },
         });
-        return await scanTable(client, tableName);
+        return await scanTable(client, dynamoTableName);
     }
     catch (error) {
         core.error("source-dynamo: " + getErrorMessage(error));
@@ -56562,12 +56562,12 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
 
 
 
-const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
+const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
     if (tablePrimaryKey)
         return tablePrimaryKey;
-    core.info("Running DescribeTableCommand on table: " + tableName);
+    core.info("Running DescribeTableCommand on table: " + dynamoTableName);
     const describeCommand = new dist_cjs.DescribeTableCommand({
-        TableName: tableName,
+        TableName: dynamoTableName,
     });
     try {
         const describeResult = await client.send(describeCommand);
@@ -56577,7 +56577,7 @@ const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
         const tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "HASH")?.AttributeName;
         const tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === "RANGE")?.AttributeName;
         if (!tablePK)
-            throw new Error("No PK found for table " + tableName);
+            throw new Error("No PK found for table " + dynamoTableName);
         return { pk: tablePK, sk: tableSK };
     }
     catch (err) {
@@ -56585,15 +56585,15 @@ const getTablePrimaryKey = async (client, tableName, tablePrimaryKey) => {
         throw err;
     }
 };
-const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
-    const scanResult = await scanTable(client, tableName);
+const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey) => {
+    const scanResult = await scanTable(client, dynamoTableName);
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const batches = chunk(scanResult, 25);
     for (const [index, batch] of batches.entries()) {
         try {
             const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
                 RequestItems: {
-                    [tableName]: batch.map((item) => ({
+                    [dynamoTableName]: batch.map((item) => ({
                         DeleteRequest: {
                             Key: {
                                 [tablePK]: item[tablePK],
@@ -56618,13 +56618,13 @@ const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
         }
     }
 };
-const populateTable = async (client, tableName, data) => {
+const populateTable = async (client, dynamoTableName, data) => {
     const batches = chunk(data, 25);
     for (const batch of batches) {
         try {
             const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
                 RequestItems: {
-                    [tableName]: batch.map((item) => ({
+                    [dynamoTableName]: batch.map((item) => ({
                         PutRequest: {
                             Item: item,
                         },
@@ -56640,7 +56640,7 @@ const populateTable = async (client, tableName, data) => {
         }
     }
 };
-/* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, tableName, sessionToken, purgeTable, tablePrimaryKey, data, }) {
+/* harmony default export */ async function target_dynamo({ accessKeyId, region, secretAccessKey, dynamoTableName, sessionToken, purgeTable, tablePrimaryKey, data, }) {
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
@@ -56655,12 +56655,12 @@ const populateTable = async (client, tableName, data) => {
         });
         // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
         if (purgeTable) {
-            core.info("Purging Table: " + tableName);
-            const definedPrimaryKey = await getTablePrimaryKey(client, tableName, tablePrimaryKey);
+            core.info("Purging Table: " + dynamoTableName);
+            const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName, tablePrimaryKey);
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
-            await doPurgeTable(client, tableName, definedPrimaryKey);
+            await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
         }
-        await populateTable(client, tableName, data);
+        await populateTable(client, dynamoTableName, data);
     }
     catch (error) {
         core.error("target-dynamo: " + getErrorMessage(error));
@@ -69235,14 +69235,13 @@ async function run() {
         let sourceData = null;
         if (config.source.type === "dynamo") {
             const { source: { region, accessKeyId, secretAccessKey, dynamoTableName, sessionToken, }, } = config;
-            const sourceDynamoResult = await source_dynamo({
+            sourceData = await source_dynamo({
                 region,
                 accessKeyId,
                 secretAccessKey,
-                tableName: dynamoTableName,
+                dynamoTableName,
                 sessionToken,
             });
-            sourceData = sourceDynamoResult;
         }
         else if (config.source.type === "s3") {
         }
@@ -69256,11 +69255,11 @@ async function run() {
             config.source.type === "dynamo" || undefined))
                 throw new Error("Data to insert into dynamoDB table is malformed. Requires an array of records");
             const { target: { accessKeyId, dynamoTableName, purgeTable, region, secretAccessKey, sessionToken, tablePrimaryKey, }, } = config;
-            const targetDynamoResult = await target_dynamo({
+            await target_dynamo({
                 accessKeyId,
                 region,
                 secretAccessKey,
-                tableName: dynamoTableName,
+                dynamoTableName,
                 purgeTable,
                 sessionToken,
                 tablePrimaryKey,
