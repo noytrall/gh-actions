@@ -26,7 +26,7 @@ async function run() {
     core.setSecret(config.target.secretAccessKey);
     core.setSecret(config.target.sessionToken);
 
-    core.info("CONFIG: " + JSON.stringify(config));
+    core.info("CONFIG: " + JSON.stringify(config, null, 2));
 
     if (result.error) {
       core.error("parseResult: " + JSON.stringify(result, null, 2));

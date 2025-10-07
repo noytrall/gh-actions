@@ -74,7 +74,6 @@ const doPurgeTable = async (
       // TODO: handle UnprocessedItems
       await client.send(command);
     } catch (error) {
-      console.log(error);
       const message = getErrorMessage(error);
       core.error(
         `Failed purge of target table at ${index + 1}/${
