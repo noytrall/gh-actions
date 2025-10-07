@@ -11,6 +11,7 @@ export const scanTable = async (
   tableName: string
 ) => {
   try {
+    core.info("Scanning: " + tableName);
     let exclusiveLastKey: Record<string, string> | undefined = undefined;
 
     const data: Array<Record<string, unknown>> = [];
@@ -31,7 +32,6 @@ export const scanTable = async (
       data.push(...result.Items);
 
       exclusiveLastKey = result.LastEvaluatedKey;
-      core.info("LastEvaludatedKey: " + result.LastEvaluatedKey);
     } while (exclusiveLastKey);
 
     return resultSuccess(data);

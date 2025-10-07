@@ -56495,6 +56495,7 @@ const resultFail = (code, error) => ({
 
 const scanTable = async (client, tableName) => {
     try {
+        core.info("Scanning: " + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
         do {
@@ -56508,7 +56509,6 @@ const scanTable = async (client, tableName) => {
                 return resultFail(500, "Something has gone terribly wrong");
             data.push(...result.Items);
             exclusiveLastKey = result.LastEvaluatedKey;
-            core.info("LastEvaludatedKey: " + result.LastEvaluatedKey);
         } while (exclusiveLastKey);
         return resultSuccess(data);
     }
