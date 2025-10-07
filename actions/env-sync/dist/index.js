@@ -56607,6 +56607,7 @@ const doPurgeTable = async (client, tableName, tablePrimaryKey) => {
             await client.send(command);
         }
         catch (error) {
+            console.log(error);
             core.error(`Failed purge of target table at ${index + 1}/${batches.length}: ` +
                 getErrorMessage(error));
             throw error;
