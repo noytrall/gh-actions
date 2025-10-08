@@ -72095,7 +72095,7 @@ const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey) => {
     const scanResult = await scanTable(client, dynamoTableName);
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const batches = chunk(scanResult, 25);
-    core.info("deleting elements from table: " + dynamoTableName);
+    core.info("Deleting elements from table: " + dynamoTableName);
     for (const [index, batch] of batches.entries()) {
         try {
             const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
