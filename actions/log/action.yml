@@ -1,0 +1,6 @@
+name: environment synchronization
+description: Let us synchronize environments!
+
+runs:
+  using: node24
+  main: dist/index.js

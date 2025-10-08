@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "package": "ncc build src/index.ts -o actions/env-sync/dist",
+    "package:log": "ncc build src/log.ts -o actions/log/dist",
+    "package:env": "ncc build src/index.ts -o actions/env-sync/dist",
     "prepare": "npm run package"
   },
   "repository": {
