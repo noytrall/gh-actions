@@ -61,6 +61,7 @@ const doPurgeTable = async (
   const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
   const batches = chunk(scanResult, 25);
 
+  core.info("deleting elements from table: " + dynamoTableName);
   for (const [index, batch] of batches.entries()) {
     try {
       const command = new BatchWriteCommand({
@@ -187,6 +188,7 @@ export default async function (
       await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
     }
 
+    core.info("Populating table: " + dynamoTableName);
     await populateTable(client, dynamoTableName, data);
   } catch (error) {
     core.error("target-dynamo: " + getErrorMessage(error));

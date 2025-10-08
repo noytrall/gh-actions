@@ -17,6 +17,7 @@ export default async function (
       },
     });
 
+    core.info("Getting object from bucket: " + s3Config.Bucket);
     const command = new GetObjectCommand(s3Config);
 
     return await s3Client.send(command);

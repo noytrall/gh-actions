@@ -72048,6 +72048,7 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
                 sessionToken: sessionToken,
             },
         });
+        core.info("Getting object from bucket: " + s3Config.Bucket);
         const command = new client_s3_dist_cjs.GetObjectCommand(s3Config);
         return await s3Client.send(command);
     }
@@ -72094,6 +72095,7 @@ const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey) => {
     const scanResult = await scanTable(client, dynamoTableName);
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const batches = chunk(scanResult, 25);
+    core.info("deleting elements from table: " + dynamoTableName);
     for (const [index, batch] of batches.entries()) {
         try {
             const command = new lib_dynamodb_dist_cjs.BatchWriteCommand({
@@ -72181,6 +72183,7 @@ const populateTable = async (client, dynamoTableName, data) => {
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
         }
+        core.info("Populating table: " + dynamoTableName);
         await populateTable(client, dynamoTableName, data);
     }
     catch (error) {
@@ -72217,6 +72220,7 @@ const populateTable = async (client, dynamoTableName, data) => {
             Body: data,
             ...s3Config,
         });
+        core.info("Putting object in bucket: " + s3Config.Bucket);
         return await s3Client.send(command);
     }
     catch (error) {

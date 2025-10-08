@@ -40,6 +40,7 @@ export default async function (
       ...s3Config,
     });
 
+    core.info("Putting object in bucket: " + s3Config.Bucket);
     return await s3Client.send(command);
   } catch (error) {
     core.error("target-s3: " + getErrorMessage(error));
