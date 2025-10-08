@@ -1,6 +1,17 @@
 name: environment synchronization
 description: Let us synchronize environments!
 
+inputs:
+  target-aws-access-key-id:
+    description: "aws access key id of target environment"
+    required: true
+  target-aws-secret-access-key:
+    description: "aws secret access key of target environment"
+    required: true
+  target-aws-session-token:
+    description: "aws session token id of target environment"
+    required: true
+
 runs:
   using: node24
   main: dist/index.js
