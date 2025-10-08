@@ -62,14 +62,20 @@ async function run() {
       });
     } else if (sourceType === "s3") {
       const {
-        source: { accessKeyId, region, secretAccessKey, sessionToken, s3Props },
+        source: {
+          accessKeyId,
+          region,
+          secretAccessKey,
+          sessionToken,
+          s3Config,
+        },
       } = config;
       const response = await sourceS3({
         accessKeyId,
         region,
         secretAccessKey,
         sessionToken,
-        s3Props,
+        s3Config,
       });
 
       if (!response.Body) throw new Error("No Body attribute in response");
@@ -130,7 +136,13 @@ async function run() {
       });
     } else if (targetType === "s3") {
       const {
-        target: { accessKeyId, region, s3Props, secretAccessKey, sessionToken },
+        target: {
+          accessKeyId,
+          region,
+          s3Config,
+          secretAccessKey,
+          sessionToken,
+        },
       } = config;
 
       if (isArrayOfRecords(sourceData)) {
@@ -145,11 +157,11 @@ async function run() {
       await targetS3({
         accessKeyId,
         region,
-        s3Props: {
+        s3Config: {
           Metadata: s3SourcedMetadata,
           ContentType: s3SourcedContentType,
           Body: sourceData,
-          ...s3Props,
+          ...s3Config,
         },
         secretAccessKey,
         sessionToken,

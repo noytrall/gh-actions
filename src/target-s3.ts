@@ -8,7 +8,7 @@ export default async function ({
   region,
   secretAccessKey,
   sessionToken,
-  s3Props,
+  s3Config,
 }: Omit<TargetS3Parameters, "type">) {
   try {
     const s3Client = new S3Client({
@@ -20,7 +20,7 @@ export default async function ({
       },
     });
 
-    const command = new PutObjectCommand(s3Props);
+    const command = new PutObjectCommand(s3Config);
 
     return await s3Client.send(command);
   } catch (error) {

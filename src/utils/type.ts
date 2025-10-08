@@ -84,22 +84,22 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
 type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
 
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
-  s3Props: z.looseObject({
+  s3Config: z.looseObject({
     Bucket: z.string(),
     Key: z.string(),
   }),
 });
 export type SourceS3Parameters = z.infer<typeof sourceS3ParametersSchema> & {
-  s3Props: GetObjectCommandInput;
+  s3Config: GetObjectCommandInput;
 };
 const targetS3ParametersSchema = baseS3ParametersSchema.extend({
-  s3Props: z.looseObject({
+  s3Config: z.looseObject({
     Bucket: z.string(),
     Key: z.string(),
   }),
 });
 export type TargetS3Parameters = z.infer<typeof targetS3ParametersSchema> & {
-  s3Props: PutObjectCommandInput;
+  s3Config: PutObjectCommandInput;
 };
 
 const dynamoTablePrimaryKeySchema = z.object({
