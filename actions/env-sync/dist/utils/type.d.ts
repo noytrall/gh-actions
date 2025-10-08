@@ -15,13 +15,13 @@ declare const sourceS3ParametersSchema: z.ZodObject<{
     secretAccessKey: z.ZodString;
     sessionToken: z.ZodString;
     type: z.ZodLiteral<"s3">;
-    s3Props: z.ZodObject<{
+    s3Config: z.ZodObject<{
         Bucket: z.ZodString;
         Key: z.ZodString;
     }, z.z.core.$loose>;
 }, z.z.core.$strip>;
 export type SourceS3Parameters = z.infer<typeof sourceS3ParametersSchema> & {
-    s3Props: GetObjectCommandInput;
+    s3Config: GetObjectCommandInput;
 };
 declare const targetS3ParametersSchema: z.ZodObject<{
     region: z.ZodString;
@@ -29,13 +29,13 @@ declare const targetS3ParametersSchema: z.ZodObject<{
     secretAccessKey: z.ZodString;
     sessionToken: z.ZodString;
     type: z.ZodLiteral<"s3">;
-    s3Props: z.ZodObject<{
+    s3Config: z.ZodObject<{
         Bucket: z.ZodString;
         Key: z.ZodString;
     }, z.z.core.$loose>;
 }, z.z.core.$strip>;
 export type TargetS3Parameters = z.infer<typeof targetS3ParametersSchema> & {
-    s3Props: PutObjectCommandInput;
+    s3Config: PutObjectCommandInput;
 };
 declare const dynamoTablePrimaryKeySchema: z.ZodObject<{
     pk: z.ZodString;
@@ -70,7 +70,7 @@ export declare const configSchema: z.ZodObject<{
         secretAccessKey: z.ZodString;
         sessionToken: z.ZodString;
         type: z.ZodLiteral<"s3">;
-        s3Props: z.ZodObject<{
+        s3Config: z.ZodObject<{
             Bucket: z.ZodString;
             Key: z.ZodString;
         }, z.z.core.$loose>;
@@ -93,7 +93,7 @@ export declare const configSchema: z.ZodObject<{
         secretAccessKey: z.ZodString;
         sessionToken: z.ZodString;
         type: z.ZodLiteral<"s3">;
-        s3Props: z.ZodObject<{
+        s3Config: z.ZodObject<{
             Bucket: z.ZodString;
             Key: z.ZodString;
         }, z.z.core.$loose>;

@@ -1,14 +1,14 @@
 import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
+import { isUint8Array } from "node:util/types";
 import sourceDynamo from "./source-dynamo.js";
 import sourceS3 from "./source-s3.js";
 import targetDynamo from "./target-dynamo.js";
 import targetS3 from "./target-s3.js";
 import { getErrorMessage } from "./utils/errors.js";
-import { isArrayOfRecords, isObject } from "./utils/nodash.js";
+import { isArrayOfRecords } from "./utils/nodash.js";
 import { configSchema, type Config } from "./utils/type.js";
-import { isUint8Array } from "node:util/types";
 
 async function run() {
   try {
@@ -135,6 +135,8 @@ async function run() {
         tablePrimaryKey,
       });
     } else if (targetType === "s3") {
+      if (sourceType === "dynamo") s3SourcedContentType = "application/json";
+
       const {
         target: {
           accessKeyId,

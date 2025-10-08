@@ -71938,6 +71938,8 @@ var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: external "node:util/types"
+const types_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:util/types");
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-dynamodb/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(4305);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
@@ -72038,7 +72040,7 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
 
 
 
-/* harmony default export */ async function source_s3({ accessKeyId, region, secretAccessKey, sessionToken, s3Props, }) {
+/* harmony default export */ async function source_s3({ accessKeyId, region, secretAccessKey, sessionToken, s3Config, }) {
     try {
         const s3Client = new client_s3_dist_cjs.S3Client({
             region,
@@ -72048,7 +72050,7 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
                 sessionToken: sessionToken,
             },
         });
-        const command = new client_s3_dist_cjs.GetObjectCommand(s3Props);
+        const command = new client_s3_dist_cjs.GetObjectCommand(s3Config);
         return await s3Client.send(command);
     }
     catch (error) {
@@ -72174,7 +72176,7 @@ const populateTable = async (client, dynamoTableName, data) => {
 
 
 
-/* harmony default export */ async function target_s3({ accessKeyId, region, secretAccessKey, sessionToken, s3Props, }) {
+/* harmony default export */ async function target_s3({ accessKeyId, region, secretAccessKey, sessionToken, s3Config, }) {
     try {
         const s3Client = new client_s3_dist_cjs.S3Client({
             region,
@@ -72184,7 +72186,7 @@ const populateTable = async (client, dynamoTableName, data) => {
                 sessionToken: sessionToken,
             },
         });
-        const command = new client_s3_dist_cjs.PutObjectCommand(s3Props);
+        const command = new client_s3_dist_cjs.PutObjectCommand(s3Config);
         return await s3Client.send(command);
     }
     catch (error) {
@@ -84708,13 +84710,13 @@ const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
     type: zod.literal("s3"),
 });
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
-    s3Props: zod.looseObject({
+    s3Config: zod.looseObject({
         Bucket: zod.string(),
         Key: zod.string(),
     }),
 });
 const targetS3ParametersSchema = baseS3ParametersSchema.extend({
-    s3Props: zod.looseObject({
+    s3Config: zod.looseObject({
         Bucket: zod.string(),
         Key: zod.string(),
     }),
@@ -84738,8 +84740,6 @@ const configSchema = zod.object({
     ]),
 });
 
-;// CONCATENATED MODULE: external "node:util/types"
-const types_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:util/types");
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
@@ -84788,13 +84788,13 @@ async function run() {
             });
         }
         else if (sourceType === "s3") {
-            const { source: { accessKeyId, region, secretAccessKey, sessionToken, s3Props }, } = config;
+            const { source: { accessKeyId, region, secretAccessKey, sessionToken, s3Config, }, } = config;
             const response = await source_s3({
                 accessKeyId,
                 region,
                 secretAccessKey,
                 sessionToken,
-                s3Props,
+                s3Config,
             });
             if (!response.Body)
                 throw new Error("No Body attribute in response");
@@ -84834,7 +84834,9 @@ async function run() {
             });
         }
         else if (targetType === "s3") {
-            const { target: { accessKeyId, region, s3Props, secretAccessKey, sessionToken }, } = config;
+            if (sourceType === "dynamo")
+                s3SourcedContentType = "application/json";
+            const { target: { accessKeyId, region, s3Config, secretAccessKey, sessionToken, }, } = config;
             if (isArrayOfRecords(sourceData)) {
                 const encoder = new TextEncoder();
                 sourceData = encoder.encode(JSON.stringify(sourceData));
@@ -84845,11 +84847,11 @@ async function run() {
             await target_s3({
                 accessKeyId,
                 region,
-                s3Props: {
+                s3Config: {
                     Metadata: s3SourcedMetadata,
                     ContentType: s3SourcedContentType,
                     Body: sourceData,
-                    ...s3Props,
+                    ...s3Config,
                 },
                 secretAccessKey,
                 sessionToken,
