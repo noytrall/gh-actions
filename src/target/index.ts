@@ -14,7 +14,7 @@ async function run() {
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
-    const sourceData = core.getInput("sourceData", { required: true });
+    const sourceData = core.getInput("source-data", { required: true });
     core.info("sourceData: " + JSON.stringify(sourceData, null, 2));
   } catch (error) {
     core.setFailed(getErrorMessage(error));

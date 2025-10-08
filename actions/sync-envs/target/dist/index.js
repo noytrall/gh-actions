@@ -40761,7 +40761,7 @@ async function run() {
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
         core.info("fullPath: " + fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
-        const sourceData = core.getInput("sourceData", { required: true });
+        const sourceData = core.getInput("source-data", { required: true });
         core.info("sourceData: " + JSON.stringify(sourceData, null, 2));
     }
     catch (error) {

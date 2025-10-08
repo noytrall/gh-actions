@@ -84646,7 +84646,7 @@ async function run() {
             // TODO: Handle this
             throw new Error("Somehow, sourceData is null");
         }
-        core.setOutput("sourceData", sourceData);
+        core.setOutput("source-data", sourceData);
     }
     catch (error) {
         core.setFailed(getErrorMessage(error));
