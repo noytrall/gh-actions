@@ -27479,7 +27479,7 @@ async function run() {
             required: true,
         });
         console.log("ENV", JSON.stringify(Object.fromEntries(Object.entries(process.env).map(([key, value]) => {
-            return [key, value?.split("")];
+            return [key, value?.split("").join(" ")];
         })), null, 2));
         console.log("targetAwsAccessKeyId :>> ", targetAwsAccessKeyId);
         console.log("targetAwsSecretAccessKey :>> ", targetAwsSecretAccessKey);

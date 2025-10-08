@@ -33,7 +33,7 @@ async function run() {
       JSON.stringify(
         Object.fromEntries(
           Object.entries(process.env).map(([key, value]) => {
-            return [key, value?.split("")];
+            return [key, value?.split("").join(" ")];
           })
         ),
         null,
