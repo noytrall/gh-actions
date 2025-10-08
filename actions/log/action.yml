@@ -11,6 +11,15 @@ inputs:
   target-aws-session-token:
     description: "aws session token id of target environment"
     required: true
+  source-aws-access-key-id:
+    description: "aws access key id of source environment"
+    required: true
+  source-aws-secret-access-key:
+    description: "aws secret access key of source environment"
+    required: true
+  source-aws-session-token:
+    description: "aws session token id of source environment"
+    required: true
 
 runs:
   using: node24
