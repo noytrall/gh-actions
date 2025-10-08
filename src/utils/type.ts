@@ -1,3 +1,7 @@
+import type {
+  GetObjectCommandInput,
+  PutObjectCommandInput,
+} from "@aws-sdk/client-s3";
 import z from "zod";
 
 type _BaseAwsResourceParameters<P> = {
@@ -76,10 +80,27 @@ export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
 
 const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
   type: z.literal("s3"),
-  s3BucketName: z.string(),
-  s3Key: z.string(),
 });
-export type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
+type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
+
+const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
+  s3Props: z.looseObject({
+    Bucket: z.string(),
+    Key: z.string(),
+  }),
+});
+export type SourceS3Parameters = z.infer<typeof sourceS3ParametersSchema> & {
+  s3Props: GetObjectCommandInput;
+};
+const targetS3ParametersSchema = baseS3ParametersSchema.extend({
+  s3Props: z.looseObject({
+    Bucket: z.string(),
+    Key: z.string(),
+  }),
+});
+export type TargetS3Parameters = z.infer<typeof targetS3ParametersSchema> & {
+  s3Props: PutObjectCommandInput;
+};
 
 const dynamoTablePrimaryKeySchema = z.object({
   pk: z.string(),
@@ -91,14 +112,7 @@ const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
   purgeTable: z.boolean().optional(),
   tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
 });
-/* .superRefine((val, ctx) => {
-    if (val.purgeTable === true && !val.tablePK?.length)
-      ctx.addIssue({
-        code: "custom",
-        expected: "string",
-        message: "tablePK is required when purgeTable is enabled",
-      });
-  }) */
+
 export type TargetDynamoParameters = z.infer<
   typeof targetDynamoParametersSchema
 >;
@@ -106,14 +120,15 @@ export type TargetDynamoParameters = z.infer<
 export const configSchema = z.object({
   source: z.discriminatedUnion("type", [
     baseDynamoParametersSchema,
-    baseS3ParametersSchema,
+    sourceS3ParametersSchema,
   ]),
   target: z.discriminatedUnion("type", [
     targetDynamoParametersSchema,
-    baseS3ParametersSchema,
+    targetS3ParametersSchema,
   ]),
 });
 
 export type Config = z.infer<typeof configSchema>;
 
 export type DynamoData = Array<Record<string, unknown>>;
+export type S3Data = Uint8Array;

@@ -1,3 +1,4 @@
+import type { GetObjectCommandInput, PutObjectCommandInput } from "@aws-sdk/client-s3";
 import z from "zod";
 declare const baseDynamoParametersSchema: z.ZodObject<{
     region: z.ZodString;
@@ -8,16 +9,34 @@ declare const baseDynamoParametersSchema: z.ZodObject<{
     dynamoTableName: z.ZodString;
 }, z.z.core.$strip>;
 export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
-declare const baseS3ParametersSchema: z.ZodObject<{
+declare const sourceS3ParametersSchema: z.ZodObject<{
     region: z.ZodString;
     accessKeyId: z.ZodString;
     secretAccessKey: z.ZodString;
     sessionToken: z.ZodString;
     type: z.ZodLiteral<"s3">;
-    s3BucketName: z.ZodString;
-    s3Key: z.ZodString;
+    s3Props: z.ZodObject<{
+        Bucket: z.ZodString;
+        Key: z.ZodString;
+    }, z.z.core.$loose>;
 }, z.z.core.$strip>;
-export type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
+export type SourceS3Parameters = z.infer<typeof sourceS3ParametersSchema> & {
+    s3Props: GetObjectCommandInput;
+};
+declare const targetS3ParametersSchema: z.ZodObject<{
+    region: z.ZodString;
+    accessKeyId: z.ZodString;
+    secretAccessKey: z.ZodString;
+    sessionToken: z.ZodString;
+    type: z.ZodLiteral<"s3">;
+    s3Props: z.ZodObject<{
+        Bucket: z.ZodString;
+        Key: z.ZodString;
+    }, z.z.core.$loose>;
+}, z.z.core.$strip>;
+export type TargetS3Parameters = z.infer<typeof targetS3ParametersSchema> & {
+    s3Props: PutObjectCommandInput;
+};
 declare const dynamoTablePrimaryKeySchema: z.ZodObject<{
     pk: z.ZodString;
     sk: z.ZodOptional<z.ZodString>;
@@ -51,8 +70,10 @@ export declare const configSchema: z.ZodObject<{
         secretAccessKey: z.ZodString;
         sessionToken: z.ZodString;
         type: z.ZodLiteral<"s3">;
-        s3BucketName: z.ZodString;
-        s3Key: z.ZodString;
+        s3Props: z.ZodObject<{
+            Bucket: z.ZodString;
+            Key: z.ZodString;
+        }, z.z.core.$loose>;
     }, z.z.core.$strip>], "type">;
     target: z.ZodDiscriminatedUnion<[z.ZodObject<{
         region: z.ZodString;
@@ -72,10 +93,13 @@ export declare const configSchema: z.ZodObject<{
         secretAccessKey: z.ZodString;
         sessionToken: z.ZodString;
         type: z.ZodLiteral<"s3">;
-        s3BucketName: z.ZodString;
-        s3Key: z.ZodString;
+        s3Props: z.ZodObject<{
+            Bucket: z.ZodString;
+            Key: z.ZodString;
+        }, z.z.core.$loose>;
     }, z.z.core.$strip>], "type">;
 }, z.z.core.$strip>;
 export type Config = z.infer<typeof configSchema>;
 export type DynamoData = Array<Record<string, unknown>>;
+export type S3Data = Uint8Array;
 export {};

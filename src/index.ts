@@ -2,10 +2,13 @@ import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
 import sourceDynamo from "./source-dynamo.js";
+import sourceS3 from "./source-s3.js";
 import targetDynamo from "./target-dynamo.js";
+import targetS3 from "./target-s3.js";
 import { getErrorMessage } from "./utils/errors.js";
-import { isArrayOfRecords } from "./utils/nodash.js";
+import { isArrayOfRecords, isObject } from "./utils/nodash.js";
 import { configSchema, type Config } from "./utils/type.js";
+import { isUint8Array } from "node:util/types";
 
 async function run() {
   try {
@@ -33,9 +36,14 @@ async function run() {
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
-    let sourceData: unknown = null;
+    let sourceData: Array<Record<string, any>> | Uint8Array | null = null;
+    let s3SourcedMetadata: Record<string, string> | undefined = undefined;
+    let s3SourcedContentType: string | undefined;
 
-    if (config.source.type === "dynamo") {
+    const sourceType = config.source.type;
+    const targetType = config.target.type;
+
+    if (sourceType === "dynamo") {
       const {
         source: {
           region,
@@ -52,7 +60,22 @@ async function run() {
         dynamoTableName,
         sessionToken,
       });
-    } else if (config.source.type === "s3") {
+    } else if (sourceType === "s3") {
+      const {
+        source: { accessKeyId, region, secretAccessKey, sessionToken, s3Props },
+      } = config;
+      const response = await sourceS3({
+        accessKeyId,
+        region,
+        secretAccessKey,
+        sessionToken,
+        s3Props,
+      });
+
+      if (!response.Body) throw new Error("No Body attribute in response");
+      sourceData = await response.Body.transformToByteArray();
+      s3SourcedContentType = response.ContentType;
+      s3SourcedMetadata = response.Metadata;
     }
 
     if (!sourceData) {
@@ -60,12 +83,25 @@ async function run() {
       throw new Error("Somehow, sourceData is null");
     }
 
-    if (config.target.type === "dynamo") {
+    if (targetType === "dynamo") {
+      if (sourceType === "s3" && isUint8Array(sourceData)) {
+        try {
+          const decoder = new TextDecoder();
+          const jsonString = decoder.decode(sourceData);
+
+          sourceData = JSON.parse(jsonString);
+        } catch (error) {
+          core.error(
+            "Failure converting s3 Uint8Array to json to insert data in dynamoTable"
+          );
+          throw error;
+        }
+      }
       if (
         !isArrayOfRecords(
           sourceData,
           // If source of data is "dynamo", than data is already an array of records, unless it has been altered by some middleware (functionality yet to be implemented)
-          config.source.type === "dynamo" || undefined
+          sourceType === "dynamo" || undefined
         )
       )
         throw new Error(
@@ -83,7 +119,7 @@ async function run() {
           tablePrimaryKey,
         },
       } = config;
-      await targetDynamo({
+      await targetDynamo(sourceData, {
         accessKeyId,
         region,
         secretAccessKey,
@@ -91,7 +127,32 @@ async function run() {
         purgeTable,
         sessionToken,
         tablePrimaryKey,
-        data: sourceData,
+      });
+    } else if (targetType === "s3") {
+      const {
+        target: { accessKeyId, region, s3Props, secretAccessKey, sessionToken },
+      } = config;
+
+      if (isArrayOfRecords(sourceData)) {
+        const encoder = new TextEncoder();
+        sourceData = encoder.encode(JSON.stringify(sourceData));
+      }
+
+      if (!isUint8Array(sourceData)) {
+        throw new Error("Something HERE");
+      }
+
+      await targetS3({
+        accessKeyId,
+        region,
+        s3Props: {
+          Metadata: s3SourcedMetadata,
+          ContentType: s3SourcedContentType,
+          Body: sourceData,
+          ...s3Props,
+        },
+        secretAccessKey,
+        sessionToken,
       });
     }
   } catch (error) {

@@ -10,8 +10,14 @@ export const chunk = <T>(array: Array<T>, length: number): T[][] => {
 export const isString = (value: any): value is string =>
   typeof value === "string";
 
+export const isNumber = (value: any): value is number =>
+  typeof value === "number";
+
 export const isArray = <T = unknown>(value: any): value is Array<T> =>
   Array.isArray(value);
+
+export const isObject = (value: any): value is Object =>
+  value !== null && typeof value === "object";
 
 export const isRecord = (value: any): value is Record<string, unknown> =>
   value !== null && typeof value === "object" && !isArray(value);

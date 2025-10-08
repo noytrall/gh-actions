@@ -119,18 +119,18 @@ const populateTable = async (
   }
 };
 
-export default async function ({
-  accessKeyId,
-  region,
-  secretAccessKey,
-  dynamoTableName,
-  sessionToken,
-  purgeTable,
-  tablePrimaryKey,
-  data,
-}: Omit<TargetDynamoParameters, "type"> & {
-  data: DynamoData;
-}) {
+export default async function (
+  data: DynamoData,
+  {
+    accessKeyId,
+    region,
+    secretAccessKey,
+    dynamoTableName,
+    sessionToken,
+    purgeTable,
+    tablePrimaryKey,
+  }: Omit<TargetDynamoParameters, "type">
+) {
   try {
     const dynamodbClient = new DynamoDBClient({
       region,
