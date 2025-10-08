@@ -1,0 +1,14 @@
+name: environment synchronization
+description: Let us synchronize environments!
+
+inputs:
+  config-path:
+    description: "Path to a JSON configuration file"
+    required: true
+  source-data:
+    description: "data from source"
+    required: true
+
+runs:
+  using: node24
+  main: dist/index.js

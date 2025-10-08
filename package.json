@@ -7,6 +7,9 @@
     "build": "tsc",
     "package:log": "ncc build src/log.ts -o actions/log/dist",
     "package:env": "ncc build src/index.ts -o actions/env-sync/dist",
+    "package:sync:source": "ncc build src/source/index.ts -o actions/sync-envs/source/dist",
+    "package:sync:target": "ncc build src/target/index.ts -o actions/sync-envs/target/dist",
+    "package:sync": "npm run package:sync:source && npm run package:sync:target",
     "prepare": "npm run package"
   },
   "repository": {
