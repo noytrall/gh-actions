@@ -1,15 +1,12 @@
 import * as core from "@actions/core";
 import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getErrorMessage } from "./utils/errors.js";
-import type { SourceS3Parameters } from "./utils/type.js";
+import type { AWSConfig, SourceS3Parameters } from "./utils/type.js";
 
-export default async function ({
-  accessKeyId,
-  region,
-  secretAccessKey,
-  sessionToken,
-  s3Config,
-}: Omit<SourceS3Parameters, "type">) {
+export default async function (
+  { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
+  { s3Config }: Omit<SourceS3Parameters, "type">
+) {
   try {
     const s3Client = new S3Client({
       region,

@@ -1,19 +1,11 @@
 import type { GetObjectCommandInput, PutObjectCommandInput } from "@aws-sdk/client-s3";
 import z from "zod";
 declare const baseDynamoParametersSchema: z.ZodObject<{
-    region: z.ZodString;
-    accessKeyId: z.ZodString;
-    secretAccessKey: z.ZodString;
-    sessionToken: z.ZodString;
     type: z.ZodLiteral<"dynamo">;
     dynamoTableName: z.ZodString;
 }, z.z.core.$strip>;
 export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
 declare const sourceS3ParametersSchema: z.ZodObject<{
-    region: z.ZodString;
-    accessKeyId: z.ZodString;
-    secretAccessKey: z.ZodString;
-    sessionToken: z.ZodString;
     type: z.ZodLiteral<"s3">;
     s3Config: z.ZodObject<{
         Bucket: z.ZodString;
@@ -24,10 +16,6 @@ export type SourceS3Parameters = z.infer<typeof sourceS3ParametersSchema> & {
     s3Config: GetObjectCommandInput;
 };
 declare const targetS3ParametersSchema: z.ZodObject<{
-    region: z.ZodString;
-    accessKeyId: z.ZodString;
-    secretAccessKey: z.ZodString;
-    sessionToken: z.ZodString;
     type: z.ZodLiteral<"s3">;
     s3Config: z.ZodObject<{
         Bucket: z.ZodString;
@@ -43,10 +31,6 @@ declare const dynamoTablePrimaryKeySchema: z.ZodObject<{
 }, z.z.core.$strip>;
 export type DynamoTablePrimaryKey = z.infer<typeof dynamoTablePrimaryKeySchema>;
 declare const targetDynamoParametersSchema: z.ZodObject<{
-    region: z.ZodString;
-    accessKeyId: z.ZodString;
-    secretAccessKey: z.ZodString;
-    sessionToken: z.ZodString;
     type: z.ZodLiteral<"dynamo">;
     dynamoTableName: z.ZodString;
     purgeTable: z.ZodOptional<z.ZodBoolean>;
@@ -58,17 +42,9 @@ declare const targetDynamoParametersSchema: z.ZodObject<{
 export type TargetDynamoParameters = z.infer<typeof targetDynamoParametersSchema>;
 export declare const configSchema: z.ZodObject<{
     source: z.ZodDiscriminatedUnion<[z.ZodObject<{
-        region: z.ZodString;
-        accessKeyId: z.ZodString;
-        secretAccessKey: z.ZodString;
-        sessionToken: z.ZodString;
         type: z.ZodLiteral<"dynamo">;
         dynamoTableName: z.ZodString;
     }, z.z.core.$strip>, z.ZodObject<{
-        region: z.ZodString;
-        accessKeyId: z.ZodString;
-        secretAccessKey: z.ZodString;
-        sessionToken: z.ZodString;
         type: z.ZodLiteral<"s3">;
         s3Config: z.ZodObject<{
             Bucket: z.ZodString;
@@ -76,10 +52,6 @@ export declare const configSchema: z.ZodObject<{
         }, z.z.core.$loose>;
     }, z.z.core.$strip>], "type">;
     target: z.ZodDiscriminatedUnion<[z.ZodObject<{
-        region: z.ZodString;
-        accessKeyId: z.ZodString;
-        secretAccessKey: z.ZodString;
-        sessionToken: z.ZodString;
         type: z.ZodLiteral<"dynamo">;
         dynamoTableName: z.ZodString;
         purgeTable: z.ZodOptional<z.ZodBoolean>;
@@ -88,10 +60,6 @@ export declare const configSchema: z.ZodObject<{
             sk: z.ZodOptional<z.ZodString>;
         }, z.z.core.$strip>>;
     }, z.z.core.$strip>, z.ZodObject<{
-        region: z.ZodString;
-        accessKeyId: z.ZodString;
-        secretAccessKey: z.ZodString;
-        sessionToken: z.ZodString;
         type: z.ZodLiteral<"s3">;
         s3Config: z.ZodObject<{
             Bucket: z.ZodString;
@@ -100,6 +68,15 @@ export declare const configSchema: z.ZodObject<{
     }, z.z.core.$strip>], "type">;
 }, z.z.core.$strip>;
 export type Config = z.infer<typeof configSchema>;
+export type SourceData = Array<Record<string, any>> | Uint8Array | null;
 export type DynamoData = Array<Record<string, unknown>>;
 export type S3Data = Uint8Array;
+export type SourceType = "dynamo" | "s3";
+export type TargetType = "dynamo" | "s3";
+export type AWSConfig = {
+    accessKeyId: string;
+    region: string;
+    secretAccessKey: string;
+    sessionToken: string;
+};
 export {};

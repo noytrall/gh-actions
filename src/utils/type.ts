@@ -63,22 +63,13 @@ type _Config = {
       };
 };
 
-const baseAwsResourceParameterSchema = z.object({
-  region: z.string(),
-  accessKeyId: z.string(),
-  secretAccessKey: z.string(),
-  sessionToken: z.string(),
-});
-
-type BaseAwsResourceParameter = z.infer<typeof baseAwsResourceParameterSchema>;
-
-const baseDynamoParametersSchema = baseAwsResourceParameterSchema.extend({
+const baseDynamoParametersSchema = z.object({
   type: z.literal("dynamo"),
   dynamoTableName: z.string(),
 });
 export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
 
-const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
+const baseS3ParametersSchema = z.object({
   type: z.literal("s3"),
 });
 type BaseS3Parameters = z.infer<typeof baseS3ParametersSchema>;
@@ -130,5 +121,17 @@ export const configSchema = z.object({
 
 export type Config = z.infer<typeof configSchema>;
 
+export type SourceData = Array<Record<string, any>> | Uint8Array | null;
+
 export type DynamoData = Array<Record<string, unknown>>;
 export type S3Data = Uint8Array;
+
+export type SourceType = "dynamo" | "s3";
+export type TargetType = "dynamo" | "s3";
+
+export type AWSConfig = {
+  accessKeyId: string;
+  region: string;
+  secretAccessKey: string;
+  sessionToken: string;
+};

@@ -4,12 +4,16 @@ import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
+import { isUint8Array } from "util/types";
 import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
-import { chunk } from "./utils/nodash.js";
+import { chunk, isArrayOfRecords } from "./utils/nodash.js";
 import type {
+  AWSConfig,
   DynamoData,
   DynamoTablePrimaryKey,
+  SourceData,
+  SourceType,
   TargetDynamoParameters,
 } from "./utils/type.js";
 
@@ -120,18 +124,41 @@ const populateTable = async (
 };
 
 export default async function (
-  data: DynamoData,
+  sourceData: SourceData,
+  sourceType: SourceType,
+  { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
   {
-    accessKeyId,
-    region,
-    secretAccessKey,
     dynamoTableName,
-    sessionToken,
     purgeTable,
     tablePrimaryKey,
   }: Omit<TargetDynamoParameters, "type">
 ) {
+  let data = sourceData;
   try {
+    if (sourceType === "s3" && isUint8Array(data)) {
+      try {
+        const decoder = new TextDecoder();
+        const jsonString = decoder.decode(data);
+
+        data = JSON.parse(jsonString);
+      } catch (error) {
+        core.error(
+          "Failure converting s3 Uint8Array to json to insert data in dynamoTable"
+        );
+        throw error;
+      }
+    }
+    if (
+      !isArrayOfRecords(
+        data,
+        // If source of data is "dynamo", than data is already an array of records, unless it has been altered by some middleware (functionality yet to be implemented)
+        sourceType === "dynamo" || undefined
+      )
+    )
+      throw new Error(
+        "Data to insert into dynamoDB table is malformed. Requires an array of records"
+      );
+
     const dynamodbClient = new DynamoDBClient({
       region,
       credentials: {

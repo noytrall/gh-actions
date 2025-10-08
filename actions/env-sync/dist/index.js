@@ -71938,8 +71938,6 @@ var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
-;// CONCATENATED MODULE: external "node:util/types"
-const types_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:util/types");
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-dynamodb/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(4305);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
@@ -72013,7 +72011,7 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
 
 
 
-/* harmony default export */ async function source_dynamo({ accessKeyId, region, secretAccessKey, sessionToken, dynamoTableName, }) {
+/* harmony default export */ async function source_dynamo({ accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName }) {
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
@@ -72040,7 +72038,7 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
 
 
 
-/* harmony default export */ async function source_s3({ accessKeyId, region, secretAccessKey, sessionToken, s3Config, }) {
+/* harmony default export */ async function source_s3({ accessKeyId, region, secretAccessKey, sessionToken }, { s3Config }) {
     try {
         const s3Client = new client_s3_dist_cjs.S3Client({
             region,
@@ -72059,7 +72057,10 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
     }
 }
 
+// EXTERNAL MODULE: external "util/types"
+var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
+
 
 
 
@@ -72144,8 +72145,24 @@ const populateTable = async (client, dynamoTableName, data) => {
         }
     }
 };
-/* harmony default export */ async function target_dynamo(data, { accessKeyId, region, secretAccessKey, dynamoTableName, sessionToken, purgeTable, tablePrimaryKey, }) {
+/* harmony default export */ async function target_dynamo(sourceData, sourceType, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey, }) {
+    let data = sourceData;
     try {
+        if (sourceType === "s3" && (0,types_.isUint8Array)(data)) {
+            try {
+                const decoder = new TextDecoder();
+                const jsonString = decoder.decode(data);
+                data = JSON.parse(jsonString);
+            }
+            catch (error) {
+                core.error("Failure converting s3 Uint8Array to json to insert data in dynamoTable");
+                throw error;
+            }
+        }
+        if (!isArrayOfRecords(data, 
+        // If source of data is "dynamo", than data is already an array of records, unless it has been altered by some middleware (functionality yet to be implemented)
+        sourceType === "dynamo" || undefined))
+            throw new Error("Data to insert into dynamoDB table is malformed. Requires an array of records");
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
             credentials: {
@@ -72176,8 +72193,18 @@ const populateTable = async (client, dynamoTableName, data) => {
 
 
 
-/* harmony default export */ async function target_s3({ accessKeyId, region, secretAccessKey, sessionToken, s3Config, }) {
+
+
+/* harmony default export */ async function target_s3(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { s3Config }) {
     try {
+        let data = sourceData;
+        if (isArrayOfRecords(data)) {
+            const encoder = new TextEncoder();
+            data = encoder.encode(JSON.stringify(data));
+        }
+        if (!(0,types_.isUint8Array)(data)) {
+            throw new Error("Something HERE");
+        }
         const s3Client = new client_s3_dist_cjs.S3Client({
             region,
             credentials: {
@@ -72186,7 +72213,10 @@ const populateTable = async (client, dynamoTableName, data) => {
                 sessionToken: sessionToken,
             },
         });
-        const command = new client_s3_dist_cjs.PutObjectCommand(s3Config);
+        const command = new client_s3_dist_cjs.PutObjectCommand({
+            Body: data,
+            ...s3Config,
+        });
         return await s3Client.send(command);
     }
     catch (error) {
@@ -84696,17 +84726,11 @@ config(en());
 
 ;// CONCATENATED MODULE: ./src/utils/type.ts
 
-const baseAwsResourceParameterSchema = zod.object({
-    region: zod.string(),
-    accessKeyId: zod.string(),
-    secretAccessKey: zod.string(),
-    sessionToken: zod.string(),
-});
-const baseDynamoParametersSchema = baseAwsResourceParameterSchema.extend({
+const baseDynamoParametersSchema = zod.object({
     type: zod.literal("dynamo"),
     dynamoTableName: zod.string(),
 });
-const baseS3ParametersSchema = baseAwsResourceParameterSchema.extend({
+const baseS3ParametersSchema = zod.object({
     type: zod.literal("s3"),
 });
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
@@ -84750,8 +84774,6 @@ const configSchema = zod.object({
 
 
 
-
-
 async function run() {
     try {
         const configPath = core.getInput("config-path", { required: true });
@@ -84761,12 +84783,36 @@ async function run() {
         core.info("fullPath: " + fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const result = configSchema.safeParse(config);
-        core.setSecret(config.source.accessKeyId);
-        core.setSecret(config.source.secretAccessKey);
-        core.setSecret(config.source.sessionToken);
-        core.setSecret(config.target.accessKeyId);
-        core.setSecret(config.target.secretAccessKey);
-        core.setSecret(config.target.sessionToken);
+        const sourceAwsRegion = core.getInput("source-aws-region", {
+            required: true,
+        });
+        const sourceAwsAccessKeyId = core.getInput("source-aws-access-key-id", {
+            required: true,
+        });
+        const sourceAwsSecretAccessKey = core.getInput("source-aws-secret-access-key", {
+            required: true,
+        });
+        const sourceAwsSessionToken = core.getInput("source-aws-session-token", {
+            required: true,
+        });
+        const targetAwsRegion = core.getInput("target-aws-region", {
+            required: true,
+        });
+        const targetAwsAccessKeyId = core.getInput("target-aws-access-key-id", {
+            required: true,
+        });
+        const targetAwsSecretAccessKey = core.getInput("target-aws-secret-access-key", {
+            required: true,
+        });
+        const targetAwsSessionToken = core.getInput("target-aws-session-token", {
+            required: true,
+        });
+        core.setSecret(sourceAwsAccessKeyId);
+        core.setSecret(sourceAwsSecretAccessKey);
+        core.setSecret(sourceAwsSessionToken);
+        core.setSecret(targetAwsAccessKeyId);
+        core.setSecret(targetAwsSecretAccessKey);
+        core.setSecret(targetAwsSessionToken);
         core.info("CONFIG: " + JSON.stringify(config, null, 2));
         if (result.error) {
             core.error("parseResult: " + JSON.stringify(result, null, 2));
@@ -84777,23 +84823,27 @@ async function run() {
         let s3SourcedContentType;
         const sourceType = config.source.type;
         const targetType = config.target.type;
+        const sourceAwsConfig = {
+            region: sourceAwsRegion,
+            accessKeyId: sourceAwsAccessKeyId,
+            secretAccessKey: sourceAwsSecretAccessKey,
+            sessionToken: sourceAwsSessionToken,
+        };
+        const targetAwsConfig = {
+            region: targetAwsRegion,
+            accessKeyId: targetAwsAccessKeyId,
+            secretAccessKey: targetAwsSecretAccessKey,
+            sessionToken: targetAwsSessionToken,
+        };
         if (sourceType === "dynamo") {
-            const { source: { region, accessKeyId, secretAccessKey, dynamoTableName, sessionToken, }, } = config;
-            sourceData = await source_dynamo({
-                region,
-                accessKeyId,
-                secretAccessKey,
+            const { source: { dynamoTableName }, } = config;
+            sourceData = await source_dynamo(sourceAwsConfig, {
                 dynamoTableName,
-                sessionToken,
             });
         }
         else if (sourceType === "s3") {
-            const { source: { accessKeyId, region, secretAccessKey, sessionToken, s3Config, }, } = config;
-            const response = await source_s3({
-                accessKeyId,
-                region,
-                secretAccessKey,
-                sessionToken,
+            const { source: { s3Config }, } = config;
+            const response = await source_s3(sourceAwsConfig, {
                 s3Config,
             });
             if (!response.Body)
@@ -84807,54 +84857,23 @@ async function run() {
             throw new Error("Somehow, sourceData is null");
         }
         if (targetType === "dynamo") {
-            if (sourceType === "s3" && (0,types_namespaceObject.isUint8Array)(sourceData)) {
-                try {
-                    const decoder = new TextDecoder();
-                    const jsonString = decoder.decode(sourceData);
-                    sourceData = JSON.parse(jsonString);
-                }
-                catch (error) {
-                    core.error("Failure converting s3 Uint8Array to json to insert data in dynamoTable");
-                    throw error;
-                }
-            }
-            if (!isArrayOfRecords(sourceData, 
-            // If source of data is "dynamo", than data is already an array of records, unless it has been altered by some middleware (functionality yet to be implemented)
-            sourceType === "dynamo" || undefined))
-                throw new Error("Data to insert into dynamoDB table is malformed. Requires an array of records");
-            const { target: { accessKeyId, dynamoTableName, purgeTable, region, secretAccessKey, sessionToken, tablePrimaryKey, }, } = config;
-            await target_dynamo(sourceData, {
-                accessKeyId,
-                region,
-                secretAccessKey,
+            const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
+            await target_dynamo(sourceData, targetType, targetAwsConfig, {
                 dynamoTableName,
                 purgeTable,
-                sessionToken,
                 tablePrimaryKey,
             });
         }
         else if (targetType === "s3") {
+            const { target: { s3Config }, } = config;
             if (sourceType === "dynamo")
                 s3SourcedContentType = "application/json";
-            const { target: { accessKeyId, region, s3Config, secretAccessKey, sessionToken, }, } = config;
-            if (isArrayOfRecords(sourceData)) {
-                const encoder = new TextEncoder();
-                sourceData = encoder.encode(JSON.stringify(sourceData));
-            }
-            if (!(0,types_namespaceObject.isUint8Array)(sourceData)) {
-                throw new Error("Something HERE");
-            }
-            await target_s3({
-                accessKeyId,
-                region,
+            await target_s3(sourceData, targetAwsConfig, {
                 s3Config: {
                     Metadata: s3SourcedMetadata,
                     ContentType: s3SourcedContentType,
-                    Body: sourceData,
                     ...s3Config,
                 },
-                secretAccessKey,
-                sessionToken,
             });
         }
     }
