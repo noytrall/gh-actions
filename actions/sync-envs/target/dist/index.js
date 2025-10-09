@@ -71955,6 +71955,9 @@ const isArrayOfRecords = (value, force) => {
         return force;
     return isArray(value) && value.every(isRecord);
 };
+const isUint8Array = (value) => {
+    return isArray(value) && value.every(isNumber);
+};
 
 ;// CONCATENATED MODULE: ./src/utils/errors.ts
 
@@ -84509,8 +84512,6 @@ const configSchema = zod.object({
 var dist_cjs = __nccwpck_require__(4305);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
 var lib_dynamodb_dist_cjs = __nccwpck_require__(8907);
-// EXTERNAL MODULE: external "util/types"
-var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/utils/dynamo.ts
 
 
@@ -84547,7 +84548,6 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
 }
 
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
-
 
 
 
@@ -84637,7 +84637,7 @@ const populateTable = async (client, dynamoTableName, data) => {
     let data = sourceData;
     try {
         core.info("sourceType: " + sourceType);
-        if (sourceType === "s3" && (0,types_.isUint8Array)(data)) {
+        if (sourceType === "s3" && isUint8Array(data)) {
             core.info("Data is Uint8Array");
             try {
                 const decoder = new TextDecoder();
@@ -84685,6 +84685,8 @@ const populateTable = async (client, dynamoTableName, data) => {
 
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-s3/dist-cjs/index.js
 var client_s3_dist_cjs = __nccwpck_require__(3711);
+// EXTERNAL MODULE: external "util/types"
+var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/target-s3.ts
 
 

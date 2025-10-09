@@ -71959,6 +71959,9 @@ const isArrayOfRecords = (value, force) => {
         return force;
     return isArray(value) && value.every(isRecord);
 };
+const isUint8Array = (value) => {
+    return isArray(value) && value.every(isNumber);
+};
 
 ;// CONCATENATED MODULE: ./src/utils/errors.ts
 

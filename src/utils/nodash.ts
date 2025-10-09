@@ -30,3 +30,7 @@ export const isArrayOfRecords = (
 
   return isArray(value) && value.every(isRecord);
 };
+
+export const isUint8Array = (value: any): value is Uint8Array => {
+  return isArray(value) && value.every(isNumber);
+};

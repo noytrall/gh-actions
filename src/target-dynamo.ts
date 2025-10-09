@@ -4,10 +4,9 @@ import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
-import { isUint8Array } from "util/types";
 import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
-import { chunk, isArrayOfRecords } from "./utils/nodash.js";
+import { chunk, isArrayOfRecords, isUint8Array } from "./utils/nodash.js";
 import type {
   AWSConfig,
   DynamoData,
