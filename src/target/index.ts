@@ -23,13 +23,15 @@ async function run() {
 
     console.log("SOURCE DATA INPUT", sourceDataInput.slice(0, 200));
 
-    let { data, s3SourcedContentType, s3SourcedMetadata } = JSON.parse(
-      sourceDataInput
-    ) as {
+    const parsed = JSON.parse(sourceDataInput) as {
       data: SourceData;
       s3SourcedMetadata: Record<string, string> | undefined;
       s3SourcedContentType: string | undefined;
     };
+
+    let { s3SourcedContentType, s3SourcedMetadata } = parsed;
+
+    const data = transformedData ? JSON.parse(transformedData) : parsed.data;
 
     const sourceType = config.source.type;
     const targetType = config.target.type;
