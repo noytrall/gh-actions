@@ -84750,7 +84750,7 @@ async function run() {
             sessionToken: process.env.AWS_SESSION_TOKEN,
         };
         // @ts-ignore
-        core.info("DATA: " + data[(0, 10)]);
+        core.info("DATA: " + JSON.stringify(data));
         if (targetType === "dynamo") {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
             await target_dynamo(data, sourceType, targetAwsConfig, {

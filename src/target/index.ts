@@ -34,7 +34,7 @@ async function run() {
     };
 
     // @ts-ignore
-    core.info("DATA: " + data[(0, 10)]);
+    core.info("DATA: " + JSON.stringify(data));
 
     if (targetType === "dynamo") {
       const {
