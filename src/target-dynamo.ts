@@ -70,12 +70,12 @@ const doPurgeTable = async (
 
   const deletable = tableSK
     ? (record: DynamoData[number]) =>
-        !data.find(
+        data.every(
           (e) =>
-            e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]
+            !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK])
         )
     : (record: DynamoData[number]) =>
-        !data.find((e) => e[tablePK] === record[tablePK]);
+        data.every((e) => !(e[tablePK] === record[tablePK]));
 
   const toDelete = scanResult.filter(deletable);
 
