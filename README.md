@@ -197,7 +197,7 @@ jobs:
 
       - name: get data from Source environment
         id: source-data
-        uses: noytrall/gh-actions/actions/sync-envs/source@main
+        uses: cinch/gh-actions/actions/sync-envs/source@main
         with:
           config-path: ./configs/env-sync.json
 
@@ -227,7 +227,7 @@ jobs:
 
       - name: put data in Target environment
         id: target-sync-env
-        uses: noytrall/gh-actions/actions/sync-envs/target@main
+        uses: cinch/gh-actions/actions/sync-envs/target@main
         with:
           config-path: ./configs/env-sync.json
           source-data: ${{ steps.source-data.outputs.source-data }}
