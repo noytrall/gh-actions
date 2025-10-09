@@ -84646,7 +84646,11 @@ async function run() {
             // TODO: Handle this
             throw new Error("Somehow, sourceData is null");
         }
-        core.setOutput("source-data", sourceData);
+        core.setOutput("source-data", JSON.stringify({
+            data: sourceData,
+            s3SourcedMetadata,
+            s3SourcedContentType,
+        }));
     }
     catch (error) {
         core.setFailed(getErrorMessage(error));

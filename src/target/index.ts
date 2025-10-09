@@ -2,7 +2,9 @@ import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
 import { getErrorMessage } from "../utils/errors.js";
-import { type Config } from "../utils/type.js";
+import { type AWSConfig, type Config, type SourceData } from "../utils/type.js";
+import targetDynamo from "../target-dynamo.js";
+import targetS3 from "../target-s3.js";
 
 async function run() {
   try {
@@ -14,8 +16,49 @@ async function run() {
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
-    const sourceData = core.getInput("source-data", { required: true });
-    core.info("sourceData: " + JSON.stringify(sourceData, null, 2));
+    let { data, s3SourcedContentType, s3SourcedMetadata } = JSON.parse(
+      core.getInput("source-data", { required: true })
+    ) as {
+      data: SourceData;
+      s3SourcedMetadata: Record<string, string> | undefined;
+      s3SourcedContentType: string | undefined;
+    };
+
+    core.info("sourceData: " + JSON.stringify(data, null, 2));
+
+    const sourceType = config.source.type;
+    const targetType = config.target.type;
+    const targetAwsConfig: AWSConfig = {
+      region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION!,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      sessionToken: process.env.AWS_SESSION_TOKEN!,
+    };
+
+    if (targetType === "dynamo") {
+      const {
+        target: { dynamoTableName, purgeTable, tablePrimaryKey },
+      } = config;
+      await targetDynamo(data, targetType, targetAwsConfig, {
+        dynamoTableName,
+        purgeTable,
+        tablePrimaryKey,
+      });
+    } else if (targetType === "s3") {
+      const {
+        target: { s3Config },
+      } = config;
+
+      if (sourceType === "dynamo") s3SourcedContentType = "application/json";
+
+      await targetS3(data, targetAwsConfig, {
+        s3Config: {
+          Metadata: s3SourcedMetadata,
+          ContentType: s3SourcedContentType,
+          ...s3Config,
+        },
+      });
+    }
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }
