@@ -84750,7 +84750,9 @@ async function run() {
         const transformedData = core.getInput("transformed-data");
         console.log("transformedData :>> ", transformedData);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
-        let { data, s3SourcedContentType, s3SourcedMetadata } = JSON.parse(core.getInput("source-data", { required: true }));
+        const sourceDataInput = core.getInput("source-data", { required: true });
+        console.log("SOURCE DATA INPUT", sourceDataInput.slice(0, 200));
+        let { data, s3SourcedContentType, s3SourcedMetadata } = JSON.parse(sourceDataInput);
         const sourceType = config.source.type;
         const targetType = config.target.type;
         const targetAwsConfig = {

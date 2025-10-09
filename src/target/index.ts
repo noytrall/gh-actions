@@ -19,8 +19,12 @@ async function run() {
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
+    const sourceDataInput = core.getInput("source-data", { required: true });
+
+    console.log("SOURCE DATA INPUT", sourceDataInput.slice(0, 200));
+
     let { data, s3SourcedContentType, s3SourcedMetadata } = JSON.parse(
-      core.getInput("source-data", { required: true })
+      sourceDataInput
     ) as {
       data: SourceData;
       s3SourcedMetadata: Record<string, string> | undefined;
