@@ -34,7 +34,7 @@ async function run() {
     };
 
     // @ts-ignore
-    core.info("DATA: " + data);
+    core.info("DATA: " + typeof data);
 
     if (targetType === "dynamo") {
       const {
