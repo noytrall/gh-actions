@@ -72110,8 +72110,8 @@ const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
     const deletable = tableSK
-        ? (record) => data.find((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
-        : (record) => data.find((e) => e[tablePK] !== record[tablePK]);
+        ? (record) => !data.find((e) => e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK])
+        : (record) => !data.find((e) => e[tablePK] === record[tablePK]);
     const toDelete = scanResult.filter(deletable);
     core.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
     const batches = chunk(toDelete, 25);
