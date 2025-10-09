@@ -33,7 +33,8 @@ async function run() {
       sessionToken: process.env.AWS_SESSION_TOKEN!,
     };
 
-    core.info("DATA: " + data);
+    // @ts-ignore
+    core.info("DATA: " + data[(0, 10)]);
 
     if (targetType === "dynamo") {
       const {
