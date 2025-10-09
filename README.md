@@ -110,7 +110,15 @@ Fetches data from the source resource.
 
 **Outputs:**
 
-- `source-data`: The raw data fetched from the source.
+- `source-data`: The raw data fetched from the source.  
+  ⚠️ **Note:** The `source-data` output has the following shape:
+
+  ```ts
+  {
+    data: SourceData;
+    // ...other fields for use by target/action or middleware
+  }
+  ```
 
 #### **Target Action**
 
@@ -238,16 +246,18 @@ jobs:
 
 ## 🧩 Middleware Example
 
-A middleware script can process the source data and output a transformed version via `@actions/core`:
+A middleware script can process the source data and output a transformed version via @actions/core.
+Because the source-data output has the shape { data: SourceData, ... }, the middleware should access the actual payload via source_data.data:
 
 ```js
 const core = require("@actions/core");
 
 (async () => {
-  const rawData = JSON.parse(process.env.SOURCE_DATA); // { data: [...], [key: string]: string };
-  const sanitizedData = rawData.data.filter(
-    (item) => !item.containsSensitiveInfo
-  );
+  const sourceData = JSON.parse(process.env.SOURCE_DATA); // { data: SourceData, ... }
+  const records = sourceData.data; // Access the actual fetched data
+
+  const sanitizedData = records.filter((item) => !item.containsSensitiveInfo);
+
   core.setOutput("transformed-data", JSON.stringify(sanitizedData));
 })();
 ```
