@@ -71958,6 +71958,9 @@ const isArrayOfRecords = (value, force) => {
 const isUint8Array = (value) => {
     return isArray(value) && value.every(isNumber);
 };
+const isUint8ArrayStringifiedAndParsed = (value) => {
+    return isObject(value) && Object.values(value).every(isNumber);
+};
 
 ;// CONCATENATED MODULE: ./src/utils/errors.ts
 
@@ -84637,16 +84640,19 @@ const populateTable = async (client, dynamoTableName, data) => {
     let data = sourceData;
     try {
         core.info("sourceType: " + sourceType);
-        if (sourceType === "s3" && isUint8Array(data)) {
-            core.info("Data is Uint8Array");
-            try {
-                const decoder = new TextDecoder();
-                const jsonString = decoder.decode(data);
-                data = JSON.parse(jsonString);
-            }
-            catch (error) {
-                core.error("Failure converting s3 Uint8Array to json to insert data in dynamoTable");
-                throw error;
+        if (sourceType === "s3") {
+            if (isUint8ArrayStringifiedAndParsed(data)) {
+                data = new Uint8Array(Object.values(data));
+                core.info("Data is Uint8Array");
+                try {
+                    const decoder = new TextDecoder();
+                    const jsonString = decoder.decode(data);
+                    data = JSON.parse(jsonString);
+                }
+                catch (error) {
+                    core.error("Failure converting s3 Uint8Array to json to insert data in dynamoTable");
+                    throw error;
+                }
             }
         }
         if (!isArrayOfRecords(data, 

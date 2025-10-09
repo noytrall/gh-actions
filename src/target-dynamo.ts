@@ -6,7 +6,12 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
-import { chunk, isArrayOfRecords, isUint8Array } from "./utils/nodash.js";
+import {
+  chunk,
+  isArrayOfRecords,
+  isUint8Array,
+  isUint8ArrayStringifiedAndParsed,
+} from "./utils/nodash.js";
 import type {
   AWSConfig,
   DynamoData,
@@ -136,18 +141,21 @@ export default async function (
   let data = sourceData;
   try {
     core.info("sourceType: " + sourceType);
-    if (sourceType === "s3" && isUint8Array(data)) {
-      core.info("Data is Uint8Array");
-      try {
-        const decoder = new TextDecoder();
-        const jsonString = decoder.decode(data);
+    if (sourceType === "s3") {
+      if (isUint8ArrayStringifiedAndParsed(data)) {
+        data = new Uint8Array(Object.values(data));
+        core.info("Data is Uint8Array");
+        try {
+          const decoder = new TextDecoder();
+          const jsonString = decoder.decode(data);
 
-        data = JSON.parse(jsonString);
-      } catch (error) {
-        core.error(
-          "Failure converting s3 Uint8Array to json to insert data in dynamoTable"
-        );
-        throw error;
+          data = JSON.parse(jsonString);
+        } catch (error) {
+          core.error(
+            "Failure converting s3 Uint8Array to json to insert data in dynamoTable"
+          );
+          throw error;
+        }
       }
     }
     if (

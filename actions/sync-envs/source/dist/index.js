@@ -71962,6 +71962,9 @@ const isArrayOfRecords = (value, force) => {
 const isUint8Array = (value) => {
     return isArray(value) && value.every(isNumber);
 };
+const isUint8ArrayStringifiedAndParsed = (value) => {
+    return isObject(value) && Object.values(value).every(isNumber);
+};
 
 ;// CONCATENATED MODULE: ./src/utils/errors.ts
 

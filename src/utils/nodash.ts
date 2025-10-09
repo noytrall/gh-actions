@@ -34,3 +34,9 @@ export const isArrayOfRecords = (
 export const isUint8Array = (value: any): value is Uint8Array => {
   return isArray(value) && value.every(isNumber);
 };
+
+export const isUint8ArrayStringifiedAndParsed = (
+  value: any
+): value is Record<string, number> => {
+  return isObject(value) && Object.values(value).every(isNumber);
+};

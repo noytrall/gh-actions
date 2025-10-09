@@ -6,3 +6,4 @@ export declare const isObject: (value: any) => value is Object;
 export declare const isRecord: (value: any) => value is Record<string, unknown>;
 export declare const isArrayOfRecords: (value: any, force?: boolean) => value is Array<Record<string, unknown>>;
 export declare const isUint8Array: (value: any) => value is Uint8Array;
+export declare const isUint8ArrayStringifiedAndParsed: (value: any) => value is Record<string, number>;
