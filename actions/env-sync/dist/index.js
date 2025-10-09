@@ -72150,7 +72150,9 @@ const populateTable = async (client, dynamoTableName, data) => {
 /* harmony default export */ async function target_dynamo(sourceData, sourceType, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey, }) {
     let data = sourceData;
     try {
+        core.info("sourceType: " + sourceType);
         if (sourceType === "s3" && (0,types_.isUint8Array)(data)) {
+            core.info("Data is Uint8Array");
             try {
                 const decoder = new TextDecoder();
                 const jsonString = decoder.decode(data);
@@ -72183,6 +72185,9 @@ const populateTable = async (client, dynamoTableName, data) => {
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
         }
+        core.info("typeof data: " + typeof data);
+        core.info("LENGTH: " + data.length);
+        core.info("DATA[0]: " + JSON.stringify(data[0], null, 2));
         core.info("Populating table: " + dynamoTableName);
         await populateTable(client, dynamoTableName, data);
     }
@@ -84862,7 +84867,7 @@ async function run() {
         }
         if (targetType === "dynamo") {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
-            await target_dynamo(sourceData, targetType, targetAwsConfig, {
+            await target_dynamo(sourceData, sourceType, targetAwsConfig, {
                 dynamoTableName,
                 purgeTable,
                 tablePrimaryKey,

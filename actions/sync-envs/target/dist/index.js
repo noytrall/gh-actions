@@ -84750,7 +84750,7 @@ async function run() {
         core.info("DATA: " + data);
         if (targetType === "dynamo") {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
-            await target_dynamo(data, targetType, targetAwsConfig, {
+            await target_dynamo(data, sourceType, targetAwsConfig, {
                 dynamoTableName,
                 purgeTable,
                 tablePrimaryKey,

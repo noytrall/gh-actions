@@ -120,7 +120,7 @@ async function run() {
       const {
         target: { dynamoTableName, purgeTable, tablePrimaryKey },
       } = config;
-      await targetDynamo(sourceData, targetType, targetAwsConfig, {
+      await targetDynamo(sourceData, sourceType, targetAwsConfig, {
         dynamoTableName,
         purgeTable,
         tablePrimaryKey,
