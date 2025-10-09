@@ -20,13 +20,15 @@ export const scanTable = async (
 
     const attributesInput: Pick<
       ScanCommandInput,
-      "AttributesToGet" | "ExpressionAttributeNames"
+      "ProjectionExpression" | "ExpressionAttributeNames"
     > = attributes
       ? {
           ExpressionAttributeNames: Object.fromEntries(
             attributes.map((attr, i) => [`#attr${i}`, attr])
           ),
-          AttributesToGet: attributes.map((_attr, i) => `#attr${i}`),
+          ProjectionExpression: attributes
+            .map((_attr, i) => `#attr${i}`)
+            .join(", "),
         }
       : {};
 

@@ -71988,7 +71988,9 @@ const scanTable = async (client, tableName, attributes) => {
         const attributesInput = attributes
             ? {
                 ExpressionAttributeNames: Object.fromEntries(attributes.map((attr, i) => [`#attr${i}`, attr])),
-                AttributesToGet: attributes.map((_attr, i) => `#attr${i}`),
+                ProjectionExpression: attributes
+                    .map((_attr, i) => `#attr${i}`)
+                    .join(", "),
             }
             : {};
         do {
