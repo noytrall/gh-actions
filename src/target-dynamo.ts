@@ -9,7 +9,6 @@ import { getErrorMessage } from "./utils/errors.js";
 import {
   chunk,
   isArrayOfRecords,
-  isUint8Array,
   isUint8ArrayStringifiedAndParsed,
 } from "./utils/nodash.js";
 import type {
@@ -20,6 +19,7 @@ import type {
   SourceType,
   TargetDynamoParameters,
 } from "./utils/type.js";
+import { isUint8Array } from "util/types";
 
 const getTablePrimaryKey = async (
   client: DynamoDBDocumentClient,

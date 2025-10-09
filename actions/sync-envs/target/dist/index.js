@@ -84550,7 +84550,10 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
     return data.map(fn);
 }
 
+// EXTERNAL MODULE: external "util/types"
+var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
+
 
 
 
@@ -84649,7 +84652,7 @@ const populateTable = async (client, dynamoTableName, data) => {
             else {
                 console.log(data);
             }
-            if (isUint8Array(data)) {
+            if ((0,types_.isUint8Array)(data)) {
                 core.info("Data is Uint8Array");
                 try {
                     const decoder = new TextDecoder();
@@ -84698,8 +84701,6 @@ const populateTable = async (client, dynamoTableName, data) => {
 
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-s3/dist-cjs/index.js
 var client_s3_dist_cjs = __nccwpck_require__(3711);
-// EXTERNAL MODULE: external "util/types"
-var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/target-s3.ts
 
 
