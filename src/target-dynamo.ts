@@ -136,7 +136,9 @@ export default async function (
 ) {
   let data = sourceData;
   try {
+    core.info("sourceType: " + sourceType);
     if (sourceType === "s3" && isUint8Array(data)) {
+      core.info("Data is Uint8Array");
       try {
         const decoder = new TextDecoder();
         const jsonString = decoder.decode(data);
@@ -187,6 +189,9 @@ export default async function (
 
       await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
     }
+    core.info("typeof data: " + typeof data);
+    core.info("LENGTH: " + data.length);
+    core.info("DATA[0]: " + JSON.stringify(data[0], null, 2));
 
     core.info("Populating table: " + dynamoTableName);
     await populateTable(client, dynamoTableName, data);
