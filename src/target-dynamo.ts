@@ -4,6 +4,7 @@ import {
   BatchWriteCommand,
   DynamoDBDocumentClient,
 } from "@aws-sdk/lib-dynamodb";
+import { isUint8Array } from "util/types";
 import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
 import {
@@ -19,7 +20,6 @@ import type {
   SourceType,
   TargetDynamoParameters,
 } from "./utils/type.js";
-import { isUint8Array } from "util/types";
 
 const getTablePrimaryKey = async (
   client: DynamoDBDocumentClient,
@@ -58,12 +58,32 @@ const getTablePrimaryKey = async (
 const doPurgeTable = async (
   client: DynamoDBDocumentClient,
   dynamoTableName: string,
-  tablePrimaryKey: DynamoTablePrimaryKey
+  tablePrimaryKey: DynamoTablePrimaryKey,
+  data: DynamoData
 ) => {
-  const scanResult = await scanTable(client, dynamoTableName);
-
   const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-  const batches = chunk(scanResult, 25);
+  const scanResult = await scanTable(
+    client,
+    dynamoTableName,
+    [tablePK, tableSK].filter(Boolean) as string[]
+  );
+
+  const deletable = tableSK
+    ? (record: DynamoData[number]) =>
+        data.find(
+          (e) =>
+            !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK])
+        )
+    : (record: DynamoData[number]) =>
+        data.find((e) => e[tablePK] !== record[tablePK]);
+
+  const toDelete = scanResult.filter(deletable);
+
+  core.info(
+    `table.length=${scanResult.length}; toDelete.length=${toDelete.length}`
+  );
+
+  const batches = chunk(toDelete, 25);
 
   core.info("Deleting elements from table: " + dynamoTableName);
   for (const [index, batch] of batches.entries()) {
@@ -200,7 +220,7 @@ export default async function (
         "definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2)
       );
 
-      await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
+      await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
     }
     core.info("typeof data: " + typeof data);
     core.info("LENGTH: " + data.length);

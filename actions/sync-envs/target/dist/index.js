@@ -84515,19 +84515,28 @@ const configSchema = zod.object({
 var dist_cjs = __nccwpck_require__(4305);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
 var lib_dynamodb_dist_cjs = __nccwpck_require__(8907);
+// EXTERNAL MODULE: external "util/types"
+var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/utils/dynamo.ts
 
 
 
-const scanTable = async (client, tableName) => {
+const scanTable = async (client, tableName, attributes) => {
     try {
         core.info("Scanning: " + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
+        const attributesInput = attributes
+            ? {
+                ExpressionAttributeNames: Object.fromEntries(attributes.map((attr, i) => [`#attr${i}`, attr])),
+                AttributesToGet: attributes.map((_attr, i) => `#attr${i}`),
+            }
+            : {};
         do {
             const input = {
                 TableName: tableName,
                 ExclusiveStartKey: exclusiveLastKey,
+                ...attributesInput,
             };
             const scanCommand = new lib_dynamodb_dist_cjs.ScanCommand(input);
             const result = await client.send(scanCommand);
@@ -84550,8 +84559,6 @@ function mapDynamoItemsToPkSk(data, pk, sk) {
     return data.map(fn);
 }
 
-// EXTERNAL MODULE: external "util/types"
-var types_ = __nccwpck_require__(8253);
 ;// CONCATENATED MODULE: ./src/target-dynamo.ts
 
 
@@ -84583,10 +84590,15 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
         throw err;
     }
 };
-const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey) => {
-    const scanResult = await scanTable(client, dynamoTableName);
+const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-    const batches = chunk(scanResult, 25);
+    const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
+    const deletable = tableSK
+        ? (record) => data.find((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
+        : (record) => data.find((e) => e[tablePK] !== record[tablePK]);
+    const toDelete = scanResult.filter(deletable);
+    core.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
+    const batches = chunk(toDelete, 25);
     core.info("Deleting elements from table: " + dynamoTableName);
     for (const [index, batch] of batches.entries()) {
         try {
@@ -84685,7 +84697,7 @@ const populateTable = async (client, dynamoTableName, data) => {
             core.info("Purging Table: " + dynamoTableName);
             const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName, tablePrimaryKey);
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
-            await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
+            await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
         }
         core.info("typeof data: " + typeof data);
         core.info("LENGTH: " + data.length);

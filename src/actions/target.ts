@@ -31,7 +31,7 @@ async function run() {
 
     let { s3SourcedContentType, s3SourcedMetadata } = parsed;
 
-    let data;
+    let data: SourceData;
 
     try {
       data = JSON.parse(transformedData);

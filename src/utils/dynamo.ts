@@ -5,21 +5,36 @@ import {
   type ScanCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import { getErrorMessage } from "./errors.js";
+import type { DynamoData } from "./type.js";
 
 export const scanTable = async (
   client: DynamoDBDocumentClient,
-  tableName: string
+  tableName: string,
+  attributes?: string[]
 ) => {
   try {
     core.info("Scanning: " + tableName);
     let exclusiveLastKey: Record<string, string> | undefined = undefined;
 
-    const data: Array<Record<string, unknown>> = [];
+    const data: DynamoData = [];
+
+    const attributesInput: Pick<
+      ScanCommandInput,
+      "AttributesToGet" | "ExpressionAttributeNames"
+    > = attributes
+      ? {
+          ExpressionAttributeNames: Object.fromEntries(
+            attributes.map((attr, i) => [`#attr${i}`, attr])
+          ),
+          AttributesToGet: attributes.map((_attr, i) => `#attr${i}`),
+        }
+      : {};
 
     do {
       const input: ScanCommandInput = {
         TableName: tableName,
         ExclusiveStartKey: exclusiveLastKey,
+        ...attributesInput,
       };
 
       const scanCommand = new ScanCommand(input);

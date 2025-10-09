@@ -71980,15 +71980,22 @@ function getErrorMessage(e) {
 
 
 
-const scanTable = async (client, tableName) => {
+const scanTable = async (client, tableName, attributes) => {
     try {
         core.info("Scanning: " + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
+        const attributesInput = attributes
+            ? {
+                ExpressionAttributeNames: Object.fromEntries(attributes.map((attr, i) => [`#attr${i}`, attr])),
+                AttributesToGet: attributes.map((_attr, i) => `#attr${i}`),
+            }
+            : {};
         do {
             const input = {
                 TableName: tableName,
                 ExclusiveStartKey: exclusiveLastKey,
+                ...attributesInput,
             };
             const scanCommand = new lib_dynamodb_dist_cjs.ScanCommand(input);
             const result = await client.send(scanCommand);
@@ -72097,10 +72104,15 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
         throw err;
     }
 };
-const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey) => {
-    const scanResult = await scanTable(client, dynamoTableName);
+const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-    const batches = chunk(scanResult, 25);
+    const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
+    const deletable = tableSK
+        ? (record) => data.find((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
+        : (record) => data.find((e) => e[tablePK] !== record[tablePK]);
+    const toDelete = scanResult.filter(deletable);
+    core.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
+    const batches = chunk(toDelete, 25);
     core.info("Deleting elements from table: " + dynamoTableName);
     for (const [index, batch] of batches.entries()) {
         try {
@@ -72199,7 +72211,7 @@ const populateTable = async (client, dynamoTableName, data) => {
             core.info("Purging Table: " + dynamoTableName);
             const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName, tablePrimaryKey);
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
-            await doPurgeTable(client, dynamoTableName, definedPrimaryKey);
+            await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
         }
         core.info("typeof data: " + typeof data);
         core.info("LENGTH: " + data.length);
