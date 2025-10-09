@@ -13,19 +13,11 @@ import targetS3 from "../target-s3.js";
 async function run() {
   try {
     const configPath = core.getInput("config-path", { required: true });
-    core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
-    core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE!);
-    const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
-    core.info("fullPath: " + fullPath);
     const transformedData = core.getInput("transformed-data");
-
-    console.log("transformedData :>> ", transformedData);
-
-    const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
-
     const sourceDataInput = core.getInput("source-data", { required: true });
 
-    console.log("SOURCE DATA INPUT", sourceDataInput.slice(0, 200));
+    const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
+    const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
     const parsed = JSON.parse(sourceDataInput) as {
       data: SourceData;

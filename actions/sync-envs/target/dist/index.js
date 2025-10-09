@@ -84595,7 +84595,6 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
 const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
-    console.log("scanResult :>> ", scanResult.slice(0, 4));
     const deletable = tableSK
         ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
         : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
@@ -84663,10 +84662,6 @@ const populateTable = async (client, dynamoTableName, data) => {
             if (isUint8ArrayStringifiedAndParsed(data)) {
                 core.info("IS Uint8Array Stringified and Parsed");
                 data = new Uint8Array(Object.values(data));
-                console.log("data :>> ", data);
-            }
-            else {
-                console.log(data);
             }
             if ((0,types_.isUint8Array)(data)) {
                 core.info("Data is Uint8Array");
@@ -84702,9 +84697,6 @@ const populateTable = async (client, dynamoTableName, data) => {
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
         }
-        core.info("typeof data: " + typeof data);
-        core.info("LENGTH: " + data.length);
-        core.info("DATA[0]: " + JSON.stringify(data[0], null, 2));
         core.info("Populating table: " + dynamoTableName);
         await populateTable(client, dynamoTableName, data);
     }
@@ -84764,15 +84756,10 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
 async function run() {
     try {
         const configPath = core.getInput("config-path", { required: true });
-        core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
-        core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE);
-        const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
-        core.info("fullPath: " + fullPath);
         const transformedData = core.getInput("transformed-data");
-        console.log("transformedData :>> ", transformedData);
-        const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const sourceDataInput = core.getInput("source-data", { required: true });
-        console.log("SOURCE DATA INPUT", sourceDataInput.slice(0, 200));
+        const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
+        const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const parsed = JSON.parse(sourceDataInput);
         let { s3SourcedContentType, s3SourcedMetadata } = parsed;
         let data;

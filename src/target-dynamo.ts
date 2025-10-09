@@ -68,8 +68,6 @@ const doPurgeTable = async (
     [tablePK, tableSK].filter(Boolean) as string[]
   );
 
-  console.log("scanResult :>> ", scanResult.slice(0, 4));
-
   const deletable = tableSK
     ? (record: DynamoData[number]) =>
         data.every(
@@ -168,9 +166,6 @@ export default async function (
       if (isUint8ArrayStringifiedAndParsed(data)) {
         core.info("IS Uint8Array Stringified and Parsed");
         data = new Uint8Array(Object.values(data));
-        console.log("data :>> ", data);
-      } else {
-        console.log(data);
       }
       if (isUint8Array(data)) {
         core.info("Data is Uint8Array");
@@ -224,9 +219,6 @@ export default async function (
 
       await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
     }
-    core.info("typeof data: " + typeof data);
-    core.info("LENGTH: " + data.length);
-    core.info("DATA[0]: " + JSON.stringify(data[0], null, 2));
 
     core.info("Populating table: " + dynamoTableName);
     await populateTable(client, dynamoTableName, data);

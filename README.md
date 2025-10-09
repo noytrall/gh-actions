@@ -1,12 +1,8 @@
-Here’s a clear, professional `README.md` for your GitHub Action project based on the provided files and description:
-
 ---
-
 # AWS Cross-Account Data Sync GitHub Action
 
 This GitHub Action enables seamless **data transfer between two AWS accounts**, supporting both **DynamoDB** and **S3** as source and target resources.
 It can be run as a **single end-to-end action** or split into **two separate actions** for greater flexibility — for example, if you need to insert a custom data transformation step between fetching and writing data.
-
 ---
 
 ## 🚀 Features
@@ -72,7 +68,7 @@ type Config = {
 
 Runs the entire process — fetching from the source and writing to the target.
 
-**File:** `full-action.yaml`
+**File:** `actions/sync-envs/full/action.yaml`
 
 **Inputs:**
 
@@ -83,9 +79,9 @@ Runs the entire process — fetching from the source and writing to the target.
 
 ```yaml
 - name: env sync action step
-  uses: noytrall/gh-actions/actions/sync-envs/full@main
+  uses: cinch/gh-actions/actions/sync-envs/full@main
   with:
-    config-path: ./configs/env-sync.json
+    config-path: ./path/to/config/config-file.json
     target-aws-region: eu-west-1
     target-aws-access-key-id: ${{ steps.target-aws-creds.outputs.aws-access-key-id }}
     target-aws-secret-access-key: ${{ steps.target-aws-creds.outputs.aws-secret-access-key }}
@@ -106,7 +102,7 @@ These can be used independently to allow for **custom middleware** or transforma
 
 Fetches data from the source resource.
 
-**File:** `source-action.yaml`
+**File:** `actions/sync-envs/source/action.yaml`
 
 **Inputs:**
 
@@ -120,7 +116,7 @@ Fetches data from the source resource.
 
 Writes data to the target resource.
 
-**File:** `target-action.yaml`
+**File:** `actions/sync-envs/target/action.yaml`
 
 **Inputs:**
 
@@ -130,7 +126,7 @@ Writes data to the target resource.
 
 ---
 
-## 🧠 Example Workflow: `sync.yml`
+## 🧠 Example Workflow:
 
 An example workflow showing both approaches:
 
@@ -142,17 +138,34 @@ jobs:
   one_action:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - name: Configure AWS credentials
+
+     - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure Source AWS credentials
+        id: source-aws-creds
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: arn:aws:iam::111111111111:role/example-role
+          role-session-name: example-session-name
           aws-region: eu-west-1
+          audience: sts.amazonaws.com
           output-credentials: true
-      - name: Run full sync
-        uses: noytrall/gh-actions/actions/sync-envs/full@main
+
+      - name: Configure Target AWS credentials
+        id: target-aws-creds
+        uses: aws-actions/configure-aws-credentials@v5
         with:
-          config-path: ./configs/env-sync.json
+          role-to-assume: arn:aws:iam::111111111111:role/example-role
+          role-session-name: example-session-name
+          aws-region: eu-west-1
+          audience: sts.amazonaws.com
+          output-credentials: true
+
+      - name: Run full sync
+        uses: cinch/gh-actions/actions/sync-envs/full@main
+        with:
+          config-path: ./path/to/config/config-file.json
           source-aws-access-key-id: ${{ steps.source-aws-creds.outputs.aws-access-key-id }}
           source-aws-secret-access-key: ${{ steps.source-aws-creds.outputs.aws-secret-access-key }}
           source-aws-session-token: ${{ steps.source-aws-creds.outputs.aws-session-token }}
@@ -166,9 +179,9 @@ jobs:
       - uses: actions/checkout@v5
       - name: Get data from source
         id: source-data
-        uses: noytrall/gh-actions/actions/sync-envs/source@main
+        uses: cinch/gh-actions/actions/sync-envs/source@main
         with:
-          config-path: ./configs/env-sync.json
+          config-path: ./path/to/config/config-file.json
 
       # (Optional) Middleware to transform data
       - name: Transform data
@@ -178,9 +191,9 @@ jobs:
           SOURCE_DATA: ${{ steps.source-data.outputs.source-data }}
 
       - name: Put data to target
-        uses: noytrall/gh-actions/actions/sync-envs/target@main
+        uses: cinch/gh-actions/actions/sync-envs/target@main
         with:
-          config-path: ./configs/env-sync.json
+          config-path: ./path/to/config/config-file.json
           source-data: ${{ steps.source-data.outputs.source-data }}
           transformed-data: ${{ steps.middleware.outputs.transformed-data }}
 ```

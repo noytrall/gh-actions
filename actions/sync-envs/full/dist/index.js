@@ -72109,7 +72109,6 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
 const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
-    console.log("scanResult :>> ", scanResult.slice(0, 4));
     const deletable = tableSK
         ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
         : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
@@ -72177,10 +72176,6 @@ const populateTable = async (client, dynamoTableName, data) => {
             if (isUint8ArrayStringifiedAndParsed(data)) {
                 core.info("IS Uint8Array Stringified and Parsed");
                 data = new Uint8Array(Object.values(data));
-                console.log("data :>> ", data);
-            }
-            else {
-                console.log(data);
             }
             if ((0,types_.isUint8Array)(data)) {
                 core.info("Data is Uint8Array");
@@ -72216,9 +72211,6 @@ const populateTable = async (client, dynamoTableName, data) => {
             core.info("definedPrimaryKey: " + JSON.stringify(definedPrimaryKey, null, 2));
             await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
         }
-        core.info("typeof data: " + typeof data);
-        core.info("LENGTH: " + data.length);
-        core.info("DATA[0]: " + JSON.stringify(data[0], null, 2));
         core.info("Populating table: " + dynamoTableName);
         await populateTable(client, dynamoTableName, data);
     }
