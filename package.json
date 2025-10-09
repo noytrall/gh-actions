@@ -5,12 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "package:log": "ncc build src/log.ts -o actions/log/dist",
-    "package:env": "ncc build src/index.ts -o actions/env-sync/dist",
-    "package:sync:source": "ncc build src/source/index.ts -o actions/sync-envs/source/dist",
-    "package:sync:target": "ncc build src/target/index.ts -o actions/sync-envs/target/dist",
-    "package:sync": "npm run package:sync:source && npm run package:sync:target",
-    "prepare": "npm run package"
+    "package:full": "ncc build src/actions/full.ts -o actions/sync-envs/full/dist",
+    "package:source": "ncc build src/actions/source.ts -o actions/sync-envs/source/dist",
+    "package:target": "ncc build src/actions/target.ts -o actions/sync-envs/target/dist",
+    "package": "npm run package:source && npm run package:target && npm run package:full"
   },
   "repository": {
     "type": "git",

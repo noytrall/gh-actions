@@ -84789,7 +84789,7 @@ const configSchema = zod.object({
     ]),
 });
 
-;// CONCATENATED MODULE: ./src/index.ts
+;// CONCATENATED MODULE: ./src/actions/full.ts
 
 
 

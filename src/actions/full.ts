@@ -1,17 +1,17 @@
 import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
-import sourceDynamo from "./source-dynamo.js";
-import sourceS3 from "./source-s3.js";
-import targetDynamo from "./target-dynamo.js";
-import targetS3 from "./target-s3.js";
-import { getErrorMessage } from "./utils/errors.js";
+import sourceDynamo from "../source-dynamo.js";
+import sourceS3 from "../source-s3.js";
+import targetDynamo from "../target-dynamo.js";
+import targetS3 from "../target-s3.js";
+import { getErrorMessage } from "../utils/errors.js";
 import {
   configSchema,
   type AWSConfig,
   type Config,
   type SourceData,
-} from "./utils/type.js";
+} from "../utils/type.js";
 
 async function run() {
   try {

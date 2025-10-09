@@ -84738,7 +84738,7 @@ var client_s3_dist_cjs = __nccwpck_require__(3711);
     }
 }
 
-;// CONCATENATED MODULE: ./src/target/index.ts
+;// CONCATENATED MODULE: ./src/actions/target.ts
 
 
 
@@ -84777,8 +84777,6 @@ async function run() {
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
             sessionToken: process.env.AWS_SESSION_TOKEN,
         };
-        // @ts-ignore
-        core.info("DATA: " + typeof data);
         if (targetType === "dynamo") {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
             await target_dynamo(data, sourceType, targetAwsConfig, {

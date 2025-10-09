@@ -2,6 +2,13 @@ name: environment synchronization
 description: Let us synchronize environments!
 
 inputs:
+  config-path:
+    description: "Path to a JSON configuration file"
+    required: true
+
+  target-aws-region:
+    description: "aws access key id of target environment"
+    required: true
   target-aws-access-key-id:
     description: "aws access key id of target environment"
     required: true
@@ -10,6 +17,9 @@ inputs:
     required: true
   target-aws-session-token:
     description: "aws session token id of target environment"
+    required: true
+  source-aws-region:
+    description: "aws access key id of source environment"
     required: true
   source-aws-access-key-id:
     description: "aws access key id of source environment"
