@@ -50,9 +50,6 @@ async function run() {
       sessionToken: process.env.AWS_SESSION_TOKEN!,
     };
 
-    // @ts-ignore
-    core.info("DATA: " + typeof data);
-
     if (targetType === "dynamo") {
       const {
         target: { dynamoTableName, purgeTable, tablePrimaryKey },
