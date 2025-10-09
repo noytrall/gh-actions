@@ -135,7 +135,7 @@ An example workflow showing both approaches:
 
 ```yaml
 jobs:
-  one_action:
+  one_step:
     runs-on: ubuntu-latest
     steps:
 
@@ -146,7 +146,7 @@ jobs:
         id: source-aws-creds
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: arn:aws:iam::111111111111:role/example-role
+          role-to-assume: arn:aws:iam::source-account:role/example-role
           role-session-name: example-session-name
           aws-region: eu-west-1
           audience: sts.amazonaws.com
@@ -156,7 +156,7 @@ jobs:
         id: target-aws-creds
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: arn:aws:iam::111111111111:role/example-role
+          role-to-assume: arn:aws:iam::target-account:role/example-role
           role-session-name: example-session-name
           aws-region: eu-west-1
           audience: sts.amazonaws.com
@@ -172,28 +172,64 @@ jobs:
           target-aws-access-key-id: ${{ steps.target-aws-creds.outputs.aws-access-key-id }}
           target-aws-secret-access-key: ${{ steps.target-aws-creds.outputs.aws-secret-access-key }}
           target-aws-session-token: ${{ steps.target-aws-creds.outputs.aws-session-token }}
+```
 
-  two_separate_actions:
+```yaml
+jobs:
+  two_steps:
+    name: Two steps to sync accounts
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
-      - name: Get data from source
+      # To use this repository's private action,
+      # you must check out the repository
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Configure Source AWS credentials
+        id: source-aws-creds
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::source-account:role/example-role
+          role-session-name: example-session-name
+          aws-region: eu-west-1
+          audience: sts.amazonaws.com
+
+      - name: get data from Source environment
         id: source-data
-        uses: cinch/gh-actions/actions/sync-envs/source@main
+        uses: noytrall/gh-actions/actions/sync-envs/source@main
         with:
-          config-path: ./path/to/config/config-file.json
+          config-path: ./configs/env-sync.json
 
-      # (Optional) Middleware to transform data
-      - name: Transform data
-        id: middleware
-        run: node src/scripts/gh-actions/source-target-middleware.js
-        env:
-          SOURCE_DATA: ${{ steps.source-data.outputs.source-data }}
+      # - name: Set up Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20
 
-      - name: Put data to target
-        uses: cinch/gh-actions/actions/sync-envs/target@main
+      # - name: Install dependencies
+      #   run: npm install @actions/core
+
+      # - name: Run Middleware file
+      #   id: middleware
+      #   env:
+      #     SOURCE_DATA: ${{ steps.source-data.outputs.source-data }}
+      #   run: node src/scripts/gh-actions/source-target-middleware.js
+
+      - name: Configure Target AWS credentials
+        id: target-aws-creds
+        uses: aws-actions/configure-aws-credentials@v5
         with:
-          config-path: ./path/to/config/config-file.json
+          role-to-assume: arn:aws:iam::target-account:role/example-role
+          role-session-name: example-session-name
+          aws-region: eu-west-1
+          audience: sts.amazonaws.com
+          output-credentials: true
+
+      - name: put data in Target environment
+        id: target-sync-env
+        uses: noytrall/gh-actions/actions/sync-envs/target@main
+        with:
+          config-path: ./configs/env-sync.json
           source-data: ${{ steps.source-data.outputs.source-data }}
           transformed-data: ${{ steps.middleware.outputs.transformed-data }}
 ```
