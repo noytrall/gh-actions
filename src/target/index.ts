@@ -13,6 +13,9 @@ async function run() {
     core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE!);
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
     core.info("fullPath: " + fullPath);
+    const transformedData = core.getInput("transformed-data");
+
+    console.log("transformedData :>> ", transformedData);
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 

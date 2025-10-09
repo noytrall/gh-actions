@@ -8,6 +8,8 @@ inputs:
   source-data:
     description: "data from source"
     required: true
+  transformed-data:
+    description: "data from middleware"
 
 runs:
   using: node24
