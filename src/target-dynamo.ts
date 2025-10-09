@@ -145,6 +145,7 @@ export default async function (
       if (isUint8ArrayStringifiedAndParsed(data)) {
         core.info("IS Uint8Array Stringified and Parsed");
         data = new Uint8Array(Object.values(data));
+        console.log("data :>> ", data);
       } else {
         console.log(data);
       }
