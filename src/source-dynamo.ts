@@ -3,7 +3,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { scanTable } from "./utils/dynamo.js";
 import { getErrorMessage } from "./utils/errors.js";
-import type { AWSConfig, BaseDynamoParameters } from "./utils/type.js";
+import type { AWSConfig, BaseDynamoParameters } from "./utils/types.js";
 
 export default async function (
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,

@@ -3,7 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import sourceDynamo from "../source-dynamo.js";
 import sourceS3 from "../source-s3.js";
-import { type AWSConfig, type Config, type SourceData } from "../utils/type.js";
+import {
+  type AWSConfig,
+  type Config,
+  type SourceData,
+} from "../utils/types.js";
 import { getErrorMessage } from "../utils/errors.js";
 
 async function run() {

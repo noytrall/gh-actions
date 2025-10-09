@@ -2,7 +2,11 @@ import * as core from "@actions/core";
 import fs from "node:fs";
 import path from "node:path";
 import { getErrorMessage } from "../utils/errors.js";
-import { type AWSConfig, type Config, type SourceData } from "../utils/type.js";
+import {
+  type AWSConfig,
+  type Config,
+  type SourceData,
+} from "../utils/types.js";
 import targetDynamo from "../target-dynamo.js";
 import targetS3 from "../target-s3.js";
 

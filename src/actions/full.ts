@@ -11,7 +11,7 @@ import {
   type AWSConfig,
   type Config,
   type SourceData,
-} from "../utils/type.js";
+} from "../utils/types.js";
 
 async function run() {
   try {

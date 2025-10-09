@@ -19,7 +19,7 @@ import type {
   SourceData,
   SourceType,
   TargetDynamoParameters,
-} from "./utils/type.js";
+} from "./utils/types.js";
 
 const getTablePrimaryKey = async (
   client: DynamoDBDocumentClient,

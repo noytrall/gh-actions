@@ -5,7 +5,7 @@ import {
   type ScanCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import { getErrorMessage } from "./errors.js";
-import type { DynamoData } from "./type.js";
+import type { DynamoData } from "./types.js";
 
 export const scanTable = async (
   client: DynamoDBDocumentClient,

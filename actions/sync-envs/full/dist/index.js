@@ -84764,7 +84764,7 @@ config(en());
 
 /* harmony default export */ const zod = (external_namespaceObject);
 
-;// CONCATENATED MODULE: ./src/utils/type.ts
+;// CONCATENATED MODULE: ./src/utils/types.ts
 
 const baseDynamoParametersSchema = zod.object({
     type: zod.literal("dynamo"),

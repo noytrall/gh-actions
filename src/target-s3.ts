@@ -7,7 +7,7 @@ import type {
   AWSConfig,
   SourceData,
   TargetS3Parameters,
-} from "./utils/type.js";
+} from "./utils/types.js";
 
 export default async function (
   sourceData: SourceData,
