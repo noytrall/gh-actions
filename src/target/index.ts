@@ -33,6 +33,8 @@ async function run() {
       sessionToken: process.env.AWS_SESSION_TOKEN!,
     };
 
+    core.info("DATA: " + data?.slice(0, 20));
+
     if (targetType === "dynamo") {
       const {
         target: { dynamoTableName, purgeTable, tablePrimaryKey },
