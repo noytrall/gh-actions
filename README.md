@@ -201,19 +201,19 @@ jobs:
         with:
           config-path: ./configs/env-sync.json
 
-      # - name: Set up Node.js
-      #   uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 20
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      # - name: Install dependencies
-      #   run: npm install @actions/core
+      - name: Install dependencies
+        run: npm install @actions/core
 
-      # - name: Run Middleware file
-      #   id: middleware
-      #   env:
-      #     SOURCE_DATA: ${{ steps.source-data.outputs.source-data }}
-      #   run: node src/scripts/gh-actions/source-target-middleware.js
+      - name: Run Middleware file
+        id: middleware
+        env:
+          SOURCE_DATA: ${{ steps.source-data.outputs.source-data }}
+        run: node src/scripts/gh-actions/source-target-middleware.js
 
       - name: Configure Target AWS credentials
         id: target-aws-creds
