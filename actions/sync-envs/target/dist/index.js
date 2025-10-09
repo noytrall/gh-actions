@@ -84760,7 +84760,15 @@ async function run() {
         console.log("SOURCE DATA INPUT", sourceDataInput.slice(0, 200));
         const parsed = JSON.parse(sourceDataInput);
         let { s3SourcedContentType, s3SourcedMetadata } = parsed;
-        const data = transformedData ? JSON.parse(transformedData) : parsed.data;
+        let data;
+        try {
+            data = JSON.parse(transformedData);
+            core.info("Transformed data");
+        }
+        catch (error) {
+            data = parsed.data;
+            core.info("Data from source");
+        }
         const sourceType = config.source.type;
         const targetType = config.target.type;
         const targetAwsConfig = {
