@@ -84734,7 +84734,6 @@ async function run() {
         core.info("fullPath: " + fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         let { data, s3SourcedContentType, s3SourcedMetadata } = JSON.parse(core.getInput("source-data", { required: true }));
-        core.info("sourceData: " + JSON.stringify(data, null, 2));
         const sourceType = config.source.type;
         const targetType = config.target.type;
         const targetAwsConfig = {

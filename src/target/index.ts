@@ -24,8 +24,6 @@ async function run() {
       s3SourcedContentType: string | undefined;
     };
 
-    core.info("sourceData: " + JSON.stringify(data, null, 2));
-
     const sourceType = config.source.type;
     const targetType = config.target.type;
     const targetAwsConfig: AWSConfig = {
