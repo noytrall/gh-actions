@@ -244,8 +244,10 @@ A middleware script can process the source data and output a transformed version
 const core = require("@actions/core");
 
 (async () => {
-  const rawData = JSON.parse(process.env.SOURCE_DATA);
-  const sanitizedData = rawData.filter((item) => !item.containsSensitiveInfo);
+  const rawData = JSON.parse(process.env.SOURCE_DATA); // { data: [...], [key: string]: string };
+  const sanitizedData = rawData.data.filter(
+    (item) => !item.containsSensitiveInfo
+  );
   core.setOutput("transformed-data", JSON.stringify(sanitizedData));
 })();
 ```
