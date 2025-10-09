@@ -84642,7 +84642,11 @@ const populateTable = async (client, dynamoTableName, data) => {
         core.info("sourceType: " + sourceType);
         if (sourceType === "s3") {
             if (isUint8ArrayStringifiedAndParsed(data)) {
+                core.info("IS Uint8Array Stringified and Parsed");
                 data = new Uint8Array(Object.values(data));
+            }
+            else {
+                console.log(data);
             }
             if (isUint8Array(data)) {
                 core.info("Data is Uint8Array");
