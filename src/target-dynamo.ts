@@ -68,6 +68,8 @@ const doPurgeTable = async (
     [tablePK, tableSK].filter(Boolean) as string[]
   );
 
+  console.log("scanResult :>> ", scanResult.slice(0, 4));
+
   const deletable = tableSK
     ? (record: DynamoData[number]) =>
         data.every(
@@ -77,6 +79,7 @@ const doPurgeTable = async (
     : (record: DynamoData[number]) =>
         data.every((e) => !(e[tablePK] === record[tablePK]));
 
+  // only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
   const toDelete = scanResult.filter(deletable);
 
   core.info(
@@ -207,7 +210,6 @@ export default async function (
       marshallOptions: { removeUndefinedValues: true },
     });
 
-    // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
     if (purgeTable) {
       core.info("Purging Table: " + dynamoTableName);
       const definedPrimaryKey = await getTablePrimaryKey(

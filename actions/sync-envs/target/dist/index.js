@@ -84595,9 +84595,11 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
 const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
     const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
+    console.log("scanResult :>> ", scanResult.slice(0, 4));
     const deletable = tableSK
         ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
         : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
+    // only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
     const toDelete = scanResult.filter(deletable);
     core.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
     const batches = chunk(toDelete, 25);
@@ -84694,7 +84696,6 @@ const populateTable = async (client, dynamoTableName, data) => {
         const client = lib_dynamodb_dist_cjs.DynamoDBDocumentClient.from(dynamodbClient, {
             marshallOptions: { removeUndefinedValues: true },
         });
-        // TODO: only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
         if (purgeTable) {
             core.info("Purging Table: " + dynamoTableName);
             const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName, tablePrimaryKey);

@@ -68,8 +68,8 @@ export declare const configSchema: z.ZodObject<{
     }, z.z.core.$strip>], "type">;
 }, z.z.core.$strip>;
 export type Config = z.infer<typeof configSchema>;
-export type SourceData = Array<Record<string, any>> | Uint8Array | null;
 export type DynamoData = Array<Record<string, unknown>>;
+export type SourceData = DynamoData | Uint8Array | null;
 export type S3Data = Uint8Array;
 export type SourceType = "dynamo" | "s3";
 export type TargetType = "dynamo" | "s3";
