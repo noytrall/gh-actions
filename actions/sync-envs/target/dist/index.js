@@ -84768,5 +84768,5 @@ async function run() {
         core.setFailed(getErrorMessage(error));
     }
 }
-run;
+run();
 
