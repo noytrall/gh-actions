@@ -71985,14 +71985,16 @@ const scanTable = async (client, tableName, attributes) => {
         core.info("Scanning: " + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
-        const attributesInput = attributes
-            ? {
-                ExpressionAttributeNames: Object.fromEntries(attributes.map((attr, i) => [`#attr${i}`, attr])),
-                ProjectionExpression: attributes
-                    .map((_attr, i) => `#attr${i}`)
-                    .join(", "),
-            }
-            : {};
+        const attributesInput = {};
+        if (attributes?.length) {
+            attributesInput.ExpressionAttributeNames = {};
+            attributesInput.ProjectionExpression = attributes
+                .map((attr, i) => {
+                attributesInput.ExpressionAttributeNames[`#attr${i}`] = attr;
+                return `#attr${i}`;
+            })
+                .join(", ");
+        }
         do {
             const input = {
                 TableName: tableName,
@@ -72013,12 +72015,6 @@ const scanTable = async (client, tableName, attributes) => {
         throw error;
     }
 };
-function mapDynamoItemsToPkSk(data, pk, sk) {
-    const fn = sk
-        ? (item) => ({ [pk]: item[pk], [sk]: item[sk] })
-        : (item) => ({ [pk]: item[pk] });
-    return data.map(fn);
-}
 
 ;// CONCATENATED MODULE: ./src/source-dynamo.ts
 
@@ -84809,43 +84805,27 @@ const configSchema = zod.object({
 async function run() {
     try {
         const configPath = core.getInput("config-path", { required: true });
-        core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
-        core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE);
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
-        core.info("fullPath: " + fullPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, "utf8"));
         const result = configSchema.safeParse(config);
-        const sourceAwsRegion = core.getInput("source-aws-region", {
+        const [sourceAwsRegion, sourceAwsAccessKeyId, sourceAwsSecretAccessKey, sourceAwsSessionToken, targetAwsRegion, targetAwsAccessKeyId, targetAwsSecretAccessKey, targetAwsSessionToken,] = [
+            "source-aws-region",
+            "source-aws-access-key-id",
+            "source-aws-secret-access-key",
+            "source-aws-session-token",
+            "target-aws-region",
+            "target-aws-access-key-id",
+            "target-aws-secret-access-key",
+            "target-aws-session-token",
+        ].map((key) => core.getInput(key, {
             required: true,
-        });
-        const sourceAwsAccessKeyId = core.getInput("source-aws-access-key-id", {
-            required: true,
-        });
-        const sourceAwsSecretAccessKey = core.getInput("source-aws-secret-access-key", {
-            required: true,
-        });
-        const sourceAwsSessionToken = core.getInput("source-aws-session-token", {
-            required: true,
-        });
-        const targetAwsRegion = core.getInput("target-aws-region", {
-            required: true,
-        });
-        const targetAwsAccessKeyId = core.getInput("target-aws-access-key-id", {
-            required: true,
-        });
-        const targetAwsSecretAccessKey = core.getInput("target-aws-secret-access-key", {
-            required: true,
-        });
-        const targetAwsSessionToken = core.getInput("target-aws-session-token", {
-            required: true,
-        });
+        }));
         core.setSecret(sourceAwsAccessKeyId);
         core.setSecret(sourceAwsSecretAccessKey);
         core.setSecret(sourceAwsSessionToken);
         core.setSecret(targetAwsAccessKeyId);
         core.setSecret(targetAwsSecretAccessKey);
         core.setSecret(targetAwsSessionToken);
-        core.info("CONFIG: " + JSON.stringify(config, null, 2));
         if (result.error) {
             core.error("parseResult: " + JSON.stringify(result, null, 2));
             throw new Error(JSON.stringify(result.error.issues, null, 2));

@@ -23,9 +23,11 @@
   "homepage": "https://github.com/noytrall/gh-actions#readme",
   "description": "",
   "devDependencies": {
-    "@types/node": "^24.7.0",
+    "@types/node": "^24.7.1",
     "@vercel/ncc": "^0.38.4",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",

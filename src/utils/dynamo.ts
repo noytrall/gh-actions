@@ -21,16 +21,17 @@ export const scanTable = async (
     const attributesInput: Pick<
       ScanCommandInput,
       "ProjectionExpression" | "ExpressionAttributeNames"
-    > = attributes
-      ? {
-          ExpressionAttributeNames: Object.fromEntries(
-            attributes.map((attr, i) => [`#attr${i}`, attr])
-          ),
-          ProjectionExpression: attributes
-            .map((_attr, i) => `#attr${i}`)
-            .join(", "),
-        }
-      : {};
+    > = {};
+
+    if (attributes?.length) {
+      attributesInput.ExpressionAttributeNames = {};
+      attributesInput.ProjectionExpression = attributes
+        .map((attr, i) => {
+          attributesInput.ExpressionAttributeNames![`#attr${i}`] = attr;
+          return `#attr${i}`;
+        })
+        .join(", ");
+    }
 
     do {
       const input: ScanCommandInput = {
@@ -56,14 +57,3 @@ export const scanTable = async (
     throw error;
   }
 };
-
-export function mapDynamoItemsToPkSk(
-  data: Array<Record<string, unknown>>,
-  pk: string,
-  sk?: string
-) {
-  const fn = sk
-    ? (item: Record<string, unknown>) => ({ [pk]: item[pk], [sk]: item[sk] })
-    : (item: Record<string, unknown>) => ({ [pk]: item[pk] });
-  return data.map(fn);
-}
