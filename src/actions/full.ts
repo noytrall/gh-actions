@@ -16,45 +16,35 @@ import {
 async function run() {
   try {
     const configPath = core.getInput("config-path", { required: true });
-    core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
-    core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE!);
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
-    core.info("fullPath: " + fullPath);
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
     const result = configSchema.safeParse(config);
 
-    const sourceAwsRegion = core.getInput("source-aws-region", {
-      required: true,
-    });
-    const sourceAwsAccessKeyId = core.getInput("source-aws-access-key-id", {
-      required: true,
-    });
-    const sourceAwsSecretAccessKey = core.getInput(
+    const [
+      sourceAwsRegion,
+      sourceAwsAccessKeyId,
+      sourceAwsSecretAccessKey,
+      sourceAwsSessionToken,
+      targetAwsRegion,
+      targetAwsAccessKeyId,
+      targetAwsSecretAccessKey,
+      targetAwsSessionToken,
+    ] = [
+      "source-aws-region",
+      "source-aws-access-key-id",
       "source-aws-secret-access-key",
-      {
-        required: true,
-      }
-    );
-    const sourceAwsSessionToken = core.getInput("source-aws-session-token", {
-      required: true,
-    });
-    const targetAwsRegion = core.getInput("target-aws-region", {
-      required: true,
-    });
-    const targetAwsAccessKeyId = core.getInput("target-aws-access-key-id", {
-      required: true,
-    });
-    const targetAwsSecretAccessKey = core.getInput(
+      "source-aws-session-token",
+      "target-aws-region",
+      "target-aws-access-key-id",
       "target-aws-secret-access-key",
-      {
+      "target-aws-session-token",
+    ].map((key) =>
+      core.getInput(key, {
         required: true,
-      }
-    );
-    const targetAwsSessionToken = core.getInput("target-aws-session-token", {
-      required: true,
-    });
+      })
+    ) as [string, string, string, string, string, string, string, string];
 
     core.setSecret(sourceAwsAccessKeyId);
     core.setSecret(sourceAwsSecretAccessKey);
@@ -62,8 +52,6 @@ async function run() {
     core.setSecret(targetAwsAccessKeyId);
     core.setSecret(targetAwsSecretAccessKey);
     core.setSecret(targetAwsSessionToken);
-
-    core.info("CONFIG: " + JSON.stringify(config, null, 2));
 
     if (result.error) {
       core.error("parseResult: " + JSON.stringify(result, null, 2));

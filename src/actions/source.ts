@@ -13,10 +13,7 @@ import { getErrorMessage } from "../utils/errors.js";
 async function run() {
   try {
     const configPath = core.getInput("config-path", { required: true });
-    core.info(`configPath: ${JSON.stringify(configPath, null, 2)}`);
-    core.info("GITHUB_WORKSPACE: " + process.env.GITHUB_WORKSPACE!);
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
-    core.info("fullPath: " + fullPath);
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
 
@@ -52,8 +49,6 @@ async function run() {
       sourceData = await response.Body.transformToByteArray();
       s3SourcedContentType = response.ContentType;
       s3SourcedMetadata = response.Metadata;
-      core.setOutput("s3SourcedContentType", s3SourcedContentType);
-      core.setOutput("s3SourcedMetadata", s3SourcedMetadata);
     }
 
     if (!sourceData) {
