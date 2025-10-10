@@ -75,54 +75,7 @@ Runs the entire process — fetching from the source and writing to the target.
 - `config-path`: Path to the JSON config file.
 - Source and target AWS credentials (region, access key, secret, and session token).
 
----
-
-### 2. **Separate Source and Target Actions**
-
-These can be used independently to allow for **custom middleware** or transformation logic.
-
-#### **Source Action**
-
-Fetches data from the source resource.
-
-**File:** `actions/sync-envs/source/action.yaml`
-
-**Inputs:**
-
-- `config-path`: Path to the JSON config file.
-
-**Outputs:**
-
-- `source-data`: The raw data fetched from the source.  
-  ⚠️ **Note:** The `source-data` output has the following shape:
-
-  ```ts
-  {
-    data: SourceData;
-    // ...other fields for use by target/action or middleware
-  }
-  ```
-
-#### **Target Action**
-
-Writes data to the target resource.
-
-**File:** `actions/sync-envs/target/action.yaml`
-
-**Inputs:**
-
-- `config-path`: Path to the JSON config file.
-- `source-data`: Data fetched from the source.
-- `transformed-data`: (Optional) Data after middleware processing.
-
----
-
-## 🧠 Example Workflow:
-
-An example workflow showing both approaches:
-
-- **One-step** full sync.
-- **Two-step** sync with optional middleware.
+**Example:**
 
 ```yaml
 jobs:
@@ -164,6 +117,48 @@ jobs:
           target-aws-secret-access-key: ${{ steps.target-aws-creds.outputs.aws-secret-access-key }}
           target-aws-session-token: ${{ steps.target-aws-creds.outputs.aws-session-token }}
 ```
+
+---
+
+### 2. **Separate Source and Target Actions**
+
+These can be used independently to allow for **custom middleware** or transformation logic.
+
+#### **Source Action**
+
+Fetches data from the source resource.
+
+**File:** `actions/sync-envs/source/action.yaml`
+
+**Inputs:**
+
+- `config-path`: Path to the JSON config file.
+
+**Outputs:**
+
+- `source-data`: The raw data fetched from the source.  
+  ⚠️ **Note:** The `source-data` output has the following shape:
+
+  ```ts
+  {
+    data: SourceData;
+    // ...other fields for use by target/action or middleware
+  }
+  ```
+
+#### **Target Action**
+
+Writes data to the target resource.
+
+**File:** `actions/sync-envs/target/action.yaml`
+
+**Inputs:**
+
+- `config-path`: Path to the JSON config file.
+- `source-data`: Data fetched from the source.
+- `transformed-data`: (Optional) Data after middleware processing.
+
+**Example:**
 
 ```yaml
 jobs:
