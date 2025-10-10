@@ -1,7 +1,7 @@
 ---
 # AWS Cross-Account Data Sync GitHub Action
 
-This GitHub Action enables seamless **data transfer between two AWS accounts**, supporting both **DynamoDB** and **S3** as source and target resources.
+This GitHub Action enables **data transfer between two AWS accounts**, supporting both **DynamoDB** and **S3** as source and target resources.
 It can be run as a **single end-to-end action** or split into **two separate actions** for greater flexibility — for example, if you need to insert a custom data transformation step between fetching and writing data.
 ---
 
@@ -74,23 +74,6 @@ Runs the entire process — fetching from the source and writing to the target.
 
 - `config-path`: Path to the JSON config file.
 - Source and target AWS credentials (region, access key, secret, and session token).
-
-**Example:**
-
-```yaml
-- name: env sync action step
-  uses: cinch/gh-actions/actions/sync-envs/full@main
-  with:
-    config-path: ./path/to/config/config-file.json
-    target-aws-region: eu-west-1
-    target-aws-access-key-id: ${{ steps.target-aws-creds.outputs.aws-access-key-id }}
-    target-aws-secret-access-key: ${{ steps.target-aws-creds.outputs.aws-secret-access-key }}
-    target-aws-session-token: ${{ steps.target-aws-creds.outputs.aws-session-token }}
-    source-aws-region: eu-west-1
-    source-aws-access-key-id: ${{ steps.source-aws-creds.outputs.aws-access-key-id }}
-    source-aws-secret-access-key: ${{ steps.source-aws-creds.outputs.aws-secret-access-key }}
-    source-aws-session-token: ${{ steps.source-aws-creds.outputs.aws-session-token }}
-```
 
 ---
 
