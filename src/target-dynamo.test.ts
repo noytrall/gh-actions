@@ -1,4 +1,4 @@
-import targetDynamo from './target-dynamo';
+import { targetDynamo } from './target-dynamo';
 import { doPurgeTable, getTablePrimaryKey, populateTable } from './utils/dynamo';
 import type { AWSConfig, SourceData } from './utils/types';
 

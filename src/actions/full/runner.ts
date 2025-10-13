@@ -1,14 +1,14 @@
 import * as core from '@actions/core';
 import fs from 'node:fs';
 import path from 'node:path';
-import sourceDynamo from '../source-dynamo.js';
-import sourceS3 from '../source-s3.js';
-import targetDynamo from '../target-dynamo.js';
-import targetS3 from '../target-s3.js';
-import { getErrorMessage } from '../utils/errors.js';
-import { configSchema, type AWSConfig, type Config, type SourceData } from '../utils/types.js';
+import { sourceDynamo } from '../../source-dynamo.js';
+import { sourceS3 } from '../../source-s3.js';
+import { targetDynamo } from '../../target-dynamo.js';
+import { targetS3 } from '../../target-s3.js';
+import { getErrorMessage } from '../../utils/errors.js';
+import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
 
-async function run() {
+export default async function () {
   try {
     const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
@@ -125,5 +125,3 @@ async function run() {
     core.setFailed(getErrorMessage(error));
   }
 }
-
-await run();

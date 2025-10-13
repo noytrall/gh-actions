@@ -1,5 +1,5 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3';
-import targetS3 from './target-s3';
+import { targetS3 } from './target-s3';
 import type { AWSConfig, SourceData } from './utils/types';
 
 const mockSend = vi.fn();

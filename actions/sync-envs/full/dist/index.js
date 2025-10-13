@@ -63282,519 +63282,26 @@ module.exports = {
 
 /***/ }),
 
-/***/ 50:
+/***/ 2791:
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3024);
-/* harmony import */ var node_fs__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(node_fs__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(6760);
-/* harmony import */ var node_path__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(node_path__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _source_dynamo_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(9889);
-/* harmony import */ var _source_s3_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(9429);
-/* harmony import */ var _target_dynamo_js__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(7349);
-/* harmony import */ var _target_s3_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(8857);
-/* harmony import */ var _utils_errors_js__WEBPACK_IMPORTED_MODULE_8__ = __nccwpck_require__(6550);
-/* harmony import */ var _utils_types_js__WEBPACK_IMPORTED_MODULE_7__ = __nccwpck_require__(6265);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6210);
 
-
-
-
-
-
-
-
-
-async function run() {
-    try {
-        const configPath = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('config-path', { required: true });
-        const fullPath = node_path__WEBPACK_IMPORTED_MODULE_2___default().resolve(process.env.GITHUB_WORKSPACE, configPath);
-        const config = JSON.parse(node_fs__WEBPACK_IMPORTED_MODULE_1___default().readFileSync(fullPath, 'utf8'));
-        const result = _utils_types_js__WEBPACK_IMPORTED_MODULE_7__/* .configSchema */ .Q.safeParse(config);
-        const [sourceAwsRegion, sourceAwsAccessKeyId, sourceAwsSecretAccessKey, sourceAwsSessionToken, targetAwsRegion, targetAwsAccessKeyId, targetAwsSecretAccessKey, targetAwsSessionToken,] = [
-            'source-aws-region',
-            'source-aws-access-key-id',
-            'source-aws-secret-access-key',
-            'source-aws-session-token',
-            'target-aws-region',
-            'target-aws-access-key-id',
-            'target-aws-secret-access-key',
-            'target-aws-session-token',
-        ].map((key) => _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput(key, {
-            required: true,
-        }));
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setSecret(sourceAwsAccessKeyId);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setSecret(sourceAwsSecretAccessKey);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setSecret(sourceAwsSessionToken);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setSecret(targetAwsAccessKeyId);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setSecret(targetAwsSecretAccessKey);
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setSecret(targetAwsSessionToken);
-        if (result.error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('parseResult: ' + JSON.stringify(result, null, 2));
-            throw new Error(JSON.stringify(result.error.issues, null, 2));
-        }
-        let sourceData = null;
-        let s3SourcedMetadata = undefined;
-        let s3SourcedContentType;
-        const sourceType = config.source.type;
-        const targetType = config.target.type;
-        const sourceAwsConfig = {
-            region: sourceAwsRegion,
-            accessKeyId: sourceAwsAccessKeyId,
-            secretAccessKey: sourceAwsSecretAccessKey,
-            sessionToken: sourceAwsSessionToken,
-        };
-        const targetAwsConfig = {
-            region: targetAwsRegion,
-            accessKeyId: targetAwsAccessKeyId,
-            secretAccessKey: targetAwsSecretAccessKey,
-            sessionToken: targetAwsSessionToken,
-        };
-        if (sourceType === 'dynamo') {
-            const { source: { dynamoTableName }, } = config;
-            sourceData = await (0,_source_dynamo_js__WEBPACK_IMPORTED_MODULE_3__/* ["default"] */ .A)(sourceAwsConfig, {
-                dynamoTableName,
-            });
-        }
-        else if (sourceType === 's3') {
-            const { source: { s3Config }, } = config;
-            const response = await (0,_source_s3_js__WEBPACK_IMPORTED_MODULE_4__/* ["default"] */ .A)(sourceAwsConfig, s3Config);
-            if (!response.Body)
-                throw new Error('No Body attribute in response');
-            sourceData = await response.Body.transformToByteArray();
-            s3SourcedContentType = response.ContentType;
-            s3SourcedMetadata = response.Metadata;
-        }
-        if (!sourceData) {
-            throw new Error('Somehow, sourceData is null');
-        }
-        if (targetType === 'dynamo') {
-            const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
-            await (0,_target_dynamo_js__WEBPACK_IMPORTED_MODULE_5__/* ["default"] */ .A)(sourceData, targetAwsConfig, {
-                dynamoTableName,
-                purgeTable,
-                tablePrimaryKey,
-            });
-        }
-        else if (targetType === 's3') {
-            const { target: { s3Config }, } = config;
-            if (sourceType === 'dynamo')
-                s3SourcedContentType = 'application/json';
-            await (0,_target_s3_js__WEBPACK_IMPORTED_MODULE_6__/* ["default"] */ .A)(sourceData, targetAwsConfig, {
-                Metadata: s3SourcedMetadata,
-                ContentType: s3SourcedContentType,
-                ...s3Config,
-            });
-        }
-    }
-    catch (error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed((0,_utils_errors_js__WEBPACK_IMPORTED_MODULE_8__/* .getErrorMessage */ .u)(error));
-    }
-}
-await run();
+await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
 __webpack_async_result__();
 } catch(e) { __webpack_async_result__(e); } }, 1);
 
 /***/ }),
 
-/***/ 9889:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _aws_sdk_client_dynamodb__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4305);
-/* harmony import */ var _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8907);
-/* harmony import */ var _utils_dynamo_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(2035);
-/* harmony import */ var _utils_errors_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6550);
-
-
-
-
-
-/* harmony default export */ async function __WEBPACK_DEFAULT_EXPORT__({ accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName }) {
-    try {
-        const dynamodbClient = new _aws_sdk_client_dynamodb__WEBPACK_IMPORTED_MODULE_3__.DynamoDBClient({
-            region,
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken: sessionToken,
-            },
-        });
-        const client = _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__/* .DynamoDBDocumentClient */ .TG.from(dynamodbClient, {
-            marshallOptions: { removeUndefinedValues: true },
-        });
-        const result = await (0,_utils_dynamo_js__WEBPACK_IMPORTED_MODULE_2__/* .scanTable */ .SS)(client, dynamoTableName);
-        return result;
-    }
-    catch (error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('source-dynamo: ' + (0,_utils_errors_js__WEBPACK_IMPORTED_MODULE_4__/* .getErrorMessage */ .u)(error));
-        throw error;
-    }
-}
-
-
-/***/ }),
-
-/***/ 9429:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _aws_sdk_client_s3__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3711);
-/* harmony import */ var _utils_errors_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(6550);
-
-
-
-/* harmony default export */ async function __WEBPACK_DEFAULT_EXPORT__({ accessKeyId, region, secretAccessKey, sessionToken }, s3Config) {
-    try {
-        const s3Client = new _aws_sdk_client_s3__WEBPACK_IMPORTED_MODULE_1__/* .S3Client */ .YxF({
-            region,
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken: sessionToken,
-            },
-        });
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Getting object from bucket: ' + s3Config.Bucket);
-        const command = new _aws_sdk_client_s3__WEBPACK_IMPORTED_MODULE_1__/* .GetObjectCommand */ .jLs(s3Config);
-        return await s3Client.send(command);
-    }
-    catch (error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('source-s3: ' + (0,_utils_errors_js__WEBPACK_IMPORTED_MODULE_2__/* .getErrorMessage */ .u)(error));
-        throw error;
-    }
-}
-
-
-/***/ }),
-
-/***/ 7349:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _aws_sdk_client_dynamodb__WEBPACK_IMPORTED_MODULE_5__ = __nccwpck_require__(4305);
-/* harmony import */ var _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8907);
-/* harmony import */ var util_types__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(8253);
-/* harmony import */ var util_types__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__nccwpck_require__.n(util_types__WEBPACK_IMPORTED_MODULE_2__);
-/* harmony import */ var _utils_dynamo_js__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(2035);
-/* harmony import */ var _utils_errors_js__WEBPACK_IMPORTED_MODULE_6__ = __nccwpck_require__(6550);
-/* harmony import */ var _utils_nodash_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4314);
-
-
-
-
-
-
-
-/* harmony default export */ async function __WEBPACK_DEFAULT_EXPORT__(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey }) {
-    let data = sourceData;
-    try {
-        if ((0,_utils_nodash_js__WEBPACK_IMPORTED_MODULE_4__/* .isUint8ArrayStringifiedAndParsed */ ._u)(data)) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('IS Uint8Array Stringified and Parsed');
-            data = new Uint8Array(Object.values(data));
-        }
-        if ((0,util_types__WEBPACK_IMPORTED_MODULE_2__.isUint8Array)(data)) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Data is Uint8Array');
-            try {
-                const decoder = new TextDecoder();
-                const jsonString = decoder.decode(data);
-                data = JSON.parse(jsonString);
-            }
-            catch (error) {
-                _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('Failure converting s3 Uint8Array to json to insert data in dynamoTable');
-                throw error;
-            }
-        }
-        if (!(0,_utils_nodash_js__WEBPACK_IMPORTED_MODULE_4__/* .isArrayOfRecords */ .bo)(data))
-            throw new Error('Data to insert into dynamoDB table is malformed. Requires an array of records');
-        const dynamodbClient = new _aws_sdk_client_dynamodb__WEBPACK_IMPORTED_MODULE_5__.DynamoDBClient({
-            region,
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken,
-            },
-        });
-        const client = _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__/* .DynamoDBDocumentClient */ .TG.from(dynamodbClient, {
-            marshallOptions: { removeUndefinedValues: true },
-        });
-        if (purgeTable) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Purging Table: ' + dynamoTableName);
-            const definedPrimaryKey = await (0,_utils_dynamo_js__WEBPACK_IMPORTED_MODULE_3__/* .getTablePrimaryKey */ .sF)(client, dynamoTableName, tablePrimaryKey);
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('definedPrimaryKey: ' + JSON.stringify(definedPrimaryKey, null, 2));
-            await (0,_utils_dynamo_js__WEBPACK_IMPORTED_MODULE_3__/* .doPurgeTable */ .jH)(client, dynamoTableName, definedPrimaryKey, data);
-        }
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Populating table: ' + dynamoTableName);
-        await (0,_utils_dynamo_js__WEBPACK_IMPORTED_MODULE_3__/* .populateTable */ .FG)(client, dynamoTableName, data);
-    }
-    catch (error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('target-dynamo: ' + (0,_utils_errors_js__WEBPACK_IMPORTED_MODULE_6__/* .getErrorMessage */ .u)(error));
-        throw error;
-    }
-}
-
-
-/***/ }),
-
-/***/ 8857:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   A: () => (/* export default binding */ __WEBPACK_DEFAULT_EXPORT__)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _aws_sdk_client_s3__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(3711);
-/* harmony import */ var util_types__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8253);
-/* harmony import */ var util_types__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(util_types__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _utils_errors_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(6550);
-/* harmony import */ var _utils_nodash_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(4314);
-
-
-
-
-
-/* harmony default export */ async function __WEBPACK_DEFAULT_EXPORT__(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, s3Config) {
-    try {
-        let data = sourceData;
-        if ((0,_utils_nodash_js__WEBPACK_IMPORTED_MODULE_2__/* .isArrayOfRecords */ .bo)(data)) {
-            const encoder = new TextEncoder();
-            data = encoder.encode(JSON.stringify(data));
-        }
-        if (!(0,util_types__WEBPACK_IMPORTED_MODULE_1__.isUint8Array)(data)) {
-            throw new Error('Data type is invalid and cannot be used in PutObjectCommand');
-        }
-        const s3Client = new _aws_sdk_client_s3__WEBPACK_IMPORTED_MODULE_3__/* .S3Client */ .YxF({
-            region,
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken: sessionToken,
-            },
-        });
-        const command = new _aws_sdk_client_s3__WEBPACK_IMPORTED_MODULE_3__/* .PutObjectCommand */ .wKZ({
-            Body: data,
-            ...s3Config,
-        });
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Putting object in bucket: ' + s3Config.Bucket);
-        return await s3Client.send(command);
-    }
-    catch (error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('target-s3: ' + (0,_utils_errors_js__WEBPACK_IMPORTED_MODULE_4__/* .getErrorMessage */ .u)(error));
-        throw error;
-    }
-}
-
-
-/***/ }),
-
-/***/ 2035:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   FG: () => (/* binding */ populateTable),
-/* harmony export */   SS: () => (/* binding */ scanTable),
-/* harmony export */   jH: () => (/* binding */ doPurgeTable),
-/* harmony export */   sF: () => (/* binding */ getTablePrimaryKey)
-/* harmony export */ });
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(7484);
-/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
-/* harmony import */ var _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(8907);
-/* harmony import */ var _errors_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(6550);
-/* harmony import */ var _aws_sdk_client_dynamodb__WEBPACK_IMPORTED_MODULE_3__ = __nccwpck_require__(4305);
-/* harmony import */ var _nodash_js__WEBPACK_IMPORTED_MODULE_4__ = __nccwpck_require__(4314);
-
-
-
-
-
-const scanTable = async (client, tableName, attributes) => {
-    try {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Scanning: ' + tableName);
-        let exclusiveLastKey = undefined;
-        const data = [];
-        const attributesInput = {};
-        if (attributes?.length) {
-            attributesInput.ExpressionAttributeNames = {};
-            attributesInput.ProjectionExpression = attributes
-                .map((attr, i) => {
-                attributesInput.ExpressionAttributeNames[`#attr${i}`] = attr;
-                return `#attr${i}`;
-            })
-                .join(', ');
-        }
-        do {
-            const input = {
-                TableName: tableName,
-                ExclusiveStartKey: exclusiveLastKey,
-                ...attributesInput,
-            };
-            const scanCommand = new _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__/* .ScanCommand */ .Zy(input);
-            const result = await client.send(scanCommand);
-            if (!result.Items)
-                throw new Error('Something has gone terribly wrong');
-            data.push(...result.Items);
-            exclusiveLastKey = result.LastEvaluatedKey;
-        } while (exclusiveLastKey);
-        return data;
-    }
-    catch (error) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('scanTable: ' + (0,_errors_js__WEBPACK_IMPORTED_MODULE_2__/* .getErrorMessage */ .u)(error));
-        throw error;
-    }
-};
-const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
-    if (tablePrimaryKey)
-        return tablePrimaryKey;
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Running DescribeTableCommand on table: ' + dynamoTableName);
-    const describeCommand = new _aws_sdk_client_dynamodb__WEBPACK_IMPORTED_MODULE_3__.DescribeTableCommand({
-        TableName: dynamoTableName,
-    });
-    try {
-        const describeResult = await client.send(describeCommand);
-        if (!describeResult.Table) {
-            throw new Error('Table attribute not defined');
-        }
-        const tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === 'HASH')?.AttributeName;
-        const tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === 'RANGE')?.AttributeName;
-        if (!tablePK)
-            throw new Error('No PK found for table ' + dynamoTableName);
-        return { pk: tablePK, sk: tableSK };
-    }
-    catch (err) {
-        _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('Error in DescribeTableCommand. ' + (0,_errors_js__WEBPACK_IMPORTED_MODULE_2__/* .getErrorMessage */ .u)(err));
-        throw err;
-    }
-};
-const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
-    const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-    const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
-    const deletable = tableSK
-        ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
-        : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
-    const toDelete = scanResult.filter(deletable);
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
-    const batches = (0,_nodash_js__WEBPACK_IMPORTED_MODULE_4__/* .chunk */ .iv)(toDelete, 25);
-    _actions_core__WEBPACK_IMPORTED_MODULE_0__.info('Deleting elements from table: ' + dynamoTableName);
-    for (const [, batch] of batches.entries()) {
-        try {
-            const command = new _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__/* .BatchWriteCommand */ .Zp({
-                RequestItems: {
-                    [dynamoTableName]: batch.map((item) => ({
-                        DeleteRequest: {
-                            Key: {
-                                [tablePK]: item[tablePK],
-                                ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
-                            },
-                        },
-                    })),
-                },
-            });
-            await client.send(command);
-        }
-        catch (error) {
-            const message = (0,_errors_js__WEBPACK_IMPORTED_MODULE_2__/* .getErrorMessage */ .u)(error);
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('Failed purge of target table: ' + message);
-            throw error;
-        }
-    }
-};
-const populateTable = async (client, dynamoTableName, data) => {
-    const batches = (0,_nodash_js__WEBPACK_IMPORTED_MODULE_4__/* .chunk */ .iv)(data, 25);
-    for (const batch of batches) {
-        try {
-            const command = new _aws_sdk_lib_dynamodb__WEBPACK_IMPORTED_MODULE_1__/* .BatchWriteCommand */ .Zp({
-                RequestItems: {
-                    [dynamoTableName]: batch.map((item) => ({
-                        PutRequest: {
-                            Item: item,
-                        },
-                    })),
-                },
-            });
-            await client.send(command);
-        }
-        catch (error) {
-            _actions_core__WEBPACK_IMPORTED_MODULE_0__.error('populateTable: ' + (0,_errors_js__WEBPACK_IMPORTED_MODULE_2__/* .getErrorMessage */ .u)(error));
-            throw error;
-        }
-    }
-};
-
-
-/***/ }),
-
-/***/ 6550:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   u: () => (/* binding */ getErrorMessage)
-/* harmony export */ });
-/* harmony import */ var _nodash_js__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4314);
-
-function getErrorMessage(e) {
-    if (e instanceof Error)
-        return e.message;
-    if ((0,_nodash_js__WEBPACK_IMPORTED_MODULE_0__/* .isString */ .Kg)(e))
-        return e;
-    return 'Something happened';
-}
-
-
-/***/ }),
-
-/***/ 4314:
-/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
-
-/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   Kg: () => (/* binding */ isString),
-/* harmony export */   _u: () => (/* binding */ isUint8ArrayStringifiedAndParsed),
-/* harmony export */   bo: () => (/* binding */ isArrayOfRecords),
-/* harmony export */   iv: () => (/* binding */ chunk)
-/* harmony export */ });
-/* unused harmony exports isNumber, isArray, isObject, isRecord */
-const chunk = (array, length) => {
-    const chunks = [];
-    for (let i = 0; i < array.length; i += length)
-        chunks.push(array.slice(i, i + length));
-    return chunks;
-};
-const isString = (value) => typeof value === 'string';
-const isNumber = (value) => typeof value === 'number';
-const isArray = (value) => Array.isArray(value);
-const isObject = (value) => value !== null && typeof value === 'object';
-const isRecord = (value) => value !== null && typeof value === 'object' && !isArray(value);
-const isArrayOfRecords = (value) => {
-    return isArray(value) && value.every(isRecord);
-};
-const isUint8ArrayStringifiedAndParsed = (value) => {
-    return isRecord(value) && Object.values(value).every(isNumber);
-};
-
-
-/***/ }),
-
-/***/ 6265:
+/***/ 6210:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  Q: () => (/* binding */ configSchema)
+  A: () => (/* binding */ runner)
 });
 
 // NAMESPACE OBJECT: ./node_modules/zod/v4/core/util.js
@@ -64503,6 +64010,314 @@ __nccwpck_require__.d(external_namespaceObject, {
   "void": () => (schemas_void),
   xid: () => (schemas_xid)
 });
+
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(7484);
+// EXTERNAL MODULE: external "node:fs"
+var external_node_fs_ = __nccwpck_require__(3024);
+var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_);
+;// CONCATENATED MODULE: external "node:path"
+const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
+var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+// EXTERNAL MODULE: ./node_modules/@aws-sdk/client-dynamodb/dist-cjs/index.js
+var dist_cjs = __nccwpck_require__(4305);
+// EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
+var lib_dynamodb_dist_cjs = __nccwpck_require__(8907);
+;// CONCATENATED MODULE: ./src/utils/nodash.ts
+const chunk = (array, length) => {
+    const chunks = [];
+    for (let i = 0; i < array.length; i += length)
+        chunks.push(array.slice(i, i + length));
+    return chunks;
+};
+const isString = (value) => typeof value === 'string';
+const isNumber = (value) => typeof value === 'number';
+const isArray = (value) => Array.isArray(value);
+const isObject = (value) => value !== null && typeof value === 'object';
+const isRecord = (value) => value !== null && typeof value === 'object' && !isArray(value);
+const isArrayOfRecords = (value) => {
+    return isArray(value) && value.every(isRecord);
+};
+const isUint8ArrayStringifiedAndParsed = (value) => {
+    return isRecord(value) && Object.values(value).every(isNumber);
+};
+
+;// CONCATENATED MODULE: ./src/utils/errors.ts
+
+function getErrorMessage(e) {
+    if (e instanceof Error)
+        return e.message;
+    if (isString(e))
+        return e;
+    return 'Something happened';
+}
+
+;// CONCATENATED MODULE: ./src/utils/dynamo.ts
+
+
+
+
+
+const scanTable = async (client, tableName, attributes) => {
+    try {
+        core.info('Scanning: ' + tableName);
+        let exclusiveLastKey = undefined;
+        const data = [];
+        const attributesInput = {};
+        if (attributes?.length) {
+            attributesInput.ExpressionAttributeNames = {};
+            attributesInput.ProjectionExpression = attributes
+                .map((attr, i) => {
+                attributesInput.ExpressionAttributeNames[`#attr${i}`] = attr;
+                return `#attr${i}`;
+            })
+                .join(', ');
+        }
+        do {
+            const input = {
+                TableName: tableName,
+                ExclusiveStartKey: exclusiveLastKey,
+                ...attributesInput,
+            };
+            const scanCommand = new lib_dynamodb_dist_cjs/* ScanCommand */.Zy(input);
+            const result = await client.send(scanCommand);
+            if (!result.Items)
+                throw new Error('Something has gone terribly wrong');
+            data.push(...result.Items);
+            exclusiveLastKey = result.LastEvaluatedKey;
+        } while (exclusiveLastKey);
+        return data;
+    }
+    catch (error) {
+        core.error('scanTable: ' + getErrorMessage(error));
+        throw error;
+    }
+};
+const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
+    if (tablePrimaryKey)
+        return tablePrimaryKey;
+    core.info('Running DescribeTableCommand on table: ' + dynamoTableName);
+    const describeCommand = new dist_cjs.DescribeTableCommand({
+        TableName: dynamoTableName,
+    });
+    try {
+        const describeResult = await client.send(describeCommand);
+        if (!describeResult.Table) {
+            throw new Error('Table attribute not defined');
+        }
+        const tablePK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === 'HASH')?.AttributeName;
+        const tableSK = describeResult.Table.KeySchema?.find((ks) => ks.KeyType === 'RANGE')?.AttributeName;
+        if (!tablePK)
+            throw new Error('No PK found for table ' + dynamoTableName);
+        return { pk: tablePK, sk: tableSK };
+    }
+    catch (err) {
+        core.error('Error in DescribeTableCommand. ' + getErrorMessage(err));
+        throw err;
+    }
+};
+const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
+    const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
+    const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
+    const deletable = tableSK
+        ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
+        : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
+    const toDelete = scanResult.filter(deletable);
+    core.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
+    const batches = chunk(toDelete, 25);
+    core.info('Deleting elements from table: ' + dynamoTableName);
+    for (const [, batch] of batches.entries()) {
+        try {
+            const command = new lib_dynamodb_dist_cjs/* BatchWriteCommand */.Zp({
+                RequestItems: {
+                    [dynamoTableName]: batch.map((item) => ({
+                        DeleteRequest: {
+                            Key: {
+                                [tablePK]: item[tablePK],
+                                ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                            },
+                        },
+                    })),
+                },
+            });
+            await client.send(command);
+        }
+        catch (error) {
+            const message = getErrorMessage(error);
+            core.error('Failed purge of target table: ' + message);
+            throw error;
+        }
+    }
+};
+const populateTable = async (client, dynamoTableName, data) => {
+    const batches = chunk(data, 25);
+    for (const batch of batches) {
+        try {
+            const command = new lib_dynamodb_dist_cjs/* BatchWriteCommand */.Zp({
+                RequestItems: {
+                    [dynamoTableName]: batch.map((item) => ({
+                        PutRequest: {
+                            Item: item,
+                        },
+                    })),
+                },
+            });
+            await client.send(command);
+        }
+        catch (error) {
+            core.error('populateTable: ' + getErrorMessage(error));
+            throw error;
+        }
+    }
+};
+
+;// CONCATENATED MODULE: ./src/source-dynamo.ts
+
+
+
+
+
+async function sourceDynamo({ accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName }) {
+    try {
+        const dynamodbClient = new dist_cjs.DynamoDBClient({
+            region,
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+                sessionToken: sessionToken,
+            },
+        });
+        const client = lib_dynamodb_dist_cjs/* DynamoDBDocumentClient */.TG.from(dynamodbClient, {
+            marshallOptions: { removeUndefinedValues: true },
+        });
+        const result = await scanTable(client, dynamoTableName);
+        return result;
+    }
+    catch (error) {
+        core.error('source-dynamo: ' + getErrorMessage(error));
+        throw error;
+    }
+}
+
+// EXTERNAL MODULE: ./node_modules/@aws-sdk/client-s3/dist-cjs/index.js
+var client_s3_dist_cjs = __nccwpck_require__(3711);
+;// CONCATENATED MODULE: ./src/source-s3.ts
+
+
+
+async function sourceS3({ accessKeyId, region, secretAccessKey, sessionToken }, s3Config) {
+    try {
+        const s3Client = new client_s3_dist_cjs/* S3Client */.YxF({
+            region,
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+                sessionToken: sessionToken,
+            },
+        });
+        core.info('Getting object from bucket: ' + s3Config.Bucket);
+        const command = new client_s3_dist_cjs/* GetObjectCommand */.jLs(s3Config);
+        return await s3Client.send(command);
+    }
+    catch (error) {
+        core.error('source-s3: ' + getErrorMessage(error));
+        throw error;
+    }
+}
+
+// EXTERNAL MODULE: external "util/types"
+var types_ = __nccwpck_require__(8253);
+;// CONCATENATED MODULE: ./src/target-dynamo.ts
+
+
+
+
+
+
+
+async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey }) {
+    let data = sourceData;
+    try {
+        if (isUint8ArrayStringifiedAndParsed(data)) {
+            core.info('IS Uint8Array Stringified and Parsed');
+            data = new Uint8Array(Object.values(data));
+        }
+        if ((0,types_.isUint8Array)(data)) {
+            core.info('Data is Uint8Array');
+            try {
+                const decoder = new TextDecoder();
+                const jsonString = decoder.decode(data);
+                data = JSON.parse(jsonString);
+            }
+            catch (error) {
+                core.error('Failure converting s3 Uint8Array to json to insert data in dynamoTable');
+                throw error;
+            }
+        }
+        if (!isArrayOfRecords(data))
+            throw new Error('Data to insert into dynamoDB table is malformed. Requires an array of records');
+        const dynamodbClient = new dist_cjs.DynamoDBClient({
+            region,
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+                sessionToken,
+            },
+        });
+        const client = lib_dynamodb_dist_cjs/* DynamoDBDocumentClient */.TG.from(dynamodbClient, {
+            marshallOptions: { removeUndefinedValues: true },
+        });
+        if (purgeTable) {
+            core.info('Purging Table: ' + dynamoTableName);
+            const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName, tablePrimaryKey);
+            core.info('definedPrimaryKey: ' + JSON.stringify(definedPrimaryKey, null, 2));
+            await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
+        }
+        core.info('Populating table: ' + dynamoTableName);
+        await populateTable(client, dynamoTableName, data);
+    }
+    catch (error) {
+        core.error('target-dynamo: ' + getErrorMessage(error));
+        throw error;
+    }
+}
+
+;// CONCATENATED MODULE: ./src/target-s3.ts
+
+
+
+
+
+async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, s3Config) {
+    try {
+        let data = sourceData;
+        if (isArrayOfRecords(data)) {
+            const encoder = new TextEncoder();
+            data = encoder.encode(JSON.stringify(data));
+        }
+        if (!(0,types_.isUint8Array)(data)) {
+            throw new Error('Data type is invalid and cannot be used in PutObjectCommand');
+        }
+        const s3Client = new client_s3_dist_cjs/* S3Client */.YxF({
+            region,
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+                sessionToken: sessionToken,
+            },
+        });
+        const command = new client_s3_dist_cjs/* PutObjectCommand */.wKZ({
+            Body: data,
+            ...s3Config,
+        });
+        core.info('Putting object in bucket: ' + s3Config.Bucket);
+        return await s3Client.send(command);
+    }
+    catch (error) {
+        core.error('target-s3: ' + getErrorMessage(error));
+        throw error;
+    }
+}
 
 ;// CONCATENATED MODULE: ./node_modules/zod/v4/core/core.js
 /** A special constant with type `never` */
@@ -77037,6 +76852,103 @@ const configSchema = zod.object({
     target: zod.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
+;// CONCATENATED MODULE: ./src/actions/full/runner.ts
+
+
+
+
+
+
+
+
+
+/* harmony default export */ async function runner() {
+    try {
+        const configPath = core.getInput('config-path', { required: true });
+        const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
+        const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
+        const result = configSchema.safeParse(config);
+        const [sourceAwsRegion, sourceAwsAccessKeyId, sourceAwsSecretAccessKey, sourceAwsSessionToken, targetAwsRegion, targetAwsAccessKeyId, targetAwsSecretAccessKey, targetAwsSessionToken,] = [
+            'source-aws-region',
+            'source-aws-access-key-id',
+            'source-aws-secret-access-key',
+            'source-aws-session-token',
+            'target-aws-region',
+            'target-aws-access-key-id',
+            'target-aws-secret-access-key',
+            'target-aws-session-token',
+        ].map((key) => core.getInput(key, {
+            required: true,
+        }));
+        core.setSecret(sourceAwsAccessKeyId);
+        core.setSecret(sourceAwsSecretAccessKey);
+        core.setSecret(sourceAwsSessionToken);
+        core.setSecret(targetAwsAccessKeyId);
+        core.setSecret(targetAwsSecretAccessKey);
+        core.setSecret(targetAwsSessionToken);
+        if (result.error) {
+            core.error('parseResult: ' + JSON.stringify(result, null, 2));
+            throw new Error(JSON.stringify(result.error.issues, null, 2));
+        }
+        let sourceData = null;
+        let s3SourcedMetadata = undefined;
+        let s3SourcedContentType;
+        const sourceType = config.source.type;
+        const targetType = config.target.type;
+        const sourceAwsConfig = {
+            region: sourceAwsRegion,
+            accessKeyId: sourceAwsAccessKeyId,
+            secretAccessKey: sourceAwsSecretAccessKey,
+            sessionToken: sourceAwsSessionToken,
+        };
+        const targetAwsConfig = {
+            region: targetAwsRegion,
+            accessKeyId: targetAwsAccessKeyId,
+            secretAccessKey: targetAwsSecretAccessKey,
+            sessionToken: targetAwsSessionToken,
+        };
+        if (sourceType === 'dynamo') {
+            const { source: { dynamoTableName }, } = config;
+            sourceData = await sourceDynamo(sourceAwsConfig, {
+                dynamoTableName,
+            });
+        }
+        else if (sourceType === 's3') {
+            const { source: { s3Config }, } = config;
+            const response = await sourceS3(sourceAwsConfig, s3Config);
+            if (!response.Body)
+                throw new Error('No Body attribute in response');
+            sourceData = await response.Body.transformToByteArray();
+            s3SourcedContentType = response.ContentType;
+            s3SourcedMetadata = response.Metadata;
+        }
+        if (!sourceData) {
+            throw new Error('Somehow, sourceData is null');
+        }
+        if (targetType === 'dynamo') {
+            const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
+            await targetDynamo(sourceData, targetAwsConfig, {
+                dynamoTableName,
+                purgeTable,
+                tablePrimaryKey,
+            });
+        }
+        else if (targetType === 's3') {
+            const { target: { s3Config }, } = config;
+            if (sourceType === 'dynamo')
+                s3SourcedContentType = 'application/json';
+            await targetS3(sourceData, targetAwsConfig, {
+                Metadata: s3SourcedMetadata,
+                ContentType: s3SourcedContentType,
+                ...s3Config,
+            });
+        }
+    }
+    catch (error) {
+        core.setFailed(getErrorMessage(error));
+    }
+}
+
 
 /***/ }),
 
@@ -77156,13 +77068,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:events"
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:fs");
-
-/***/ }),
-
-/***/ 6760:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 
 /***/ }),
 
@@ -79188,6 +79093,6 @@ module.exports = /*#__PURE__*/JSON.parse('{"name":"@aws-sdk/client-s3","descript
 /******/ // startup
 /******/ // Load entry module and return exports
 /******/ // This entry module used 'module' so it can't be inlined
-/******/ var __webpack_exports__ = __nccwpck_require__(50);
+/******/ var __webpack_exports__ = __nccwpck_require__(2791);
 /******/ __webpack_exports__ = await __webpack_exports__;
 /******/ 

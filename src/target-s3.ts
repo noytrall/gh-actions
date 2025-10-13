@@ -5,7 +5,7 @@ import { getErrorMessage } from './utils/errors.js';
 import { isArrayOfRecords } from './utils/nodash.js';
 import type { AWSConfig, SourceData, TargetS3Parameters } from './utils/types.js';
 
-export default async function (
+export async function targetS3(
   sourceData: SourceData,
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
   s3Config: TargetS3Parameters['s3Config'],

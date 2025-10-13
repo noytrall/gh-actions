@@ -5,7 +5,7 @@ import { scanTable } from './utils/dynamo.js';
 import { getErrorMessage } from './utils/errors.js';
 import type { AWSConfig, BaseDynamoParameters } from './utils/types.js';
 
-export default async function (
+export async function sourceDynamo(
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
   { dynamoTableName }: Omit<BaseDynamoParameters, 'type'>,
 ) {

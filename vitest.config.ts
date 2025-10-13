@@ -13,7 +13,7 @@ export default defineConfig({
       provider: 'v8',
       enabled: true,
       include: ['src/**/*'],
-      exclude: ['**/types.ts'],
+      exclude: ['src/utils/types.ts', 'src/actions/**/action.ts'],
       extension: ['.ts'],
       reportsDirectory: 'test/coverage',
       reporter: ['text', 'json', 'html'],

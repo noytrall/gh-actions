@@ -1,4 +1,4 @@
-import sourceDynamo from './source-dynamo';
+import { sourceDynamo } from './source-dynamo';
 import { scanTable } from './utils/dynamo';
 import type { AWSConfig } from './utils/types';
 

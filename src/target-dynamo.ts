@@ -7,7 +7,7 @@ import { getErrorMessage } from './utils/errors.js';
 import { isArrayOfRecords, isUint8ArrayStringifiedAndParsed } from './utils/nodash.js';
 import type { AWSConfig, SourceData, TargetDynamoParameters } from './utils/types.js';
 
-export default async function (
+export async function targetDynamo(
   sourceData: SourceData,
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
   { dynamoTableName, purgeTable, tablePrimaryKey }: Omit<TargetDynamoParameters, 'type'>,
