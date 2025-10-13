@@ -1,13 +1,13 @@
-import * as core from "@actions/core";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { scanTable } from "./utils/dynamo.js";
-import { getErrorMessage } from "./utils/errors.js";
-import type { AWSConfig, BaseDynamoParameters } from "./utils/types.js";
+import * as core from '@actions/core';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { scanTable } from './utils/dynamo.js';
+import { getErrorMessage } from './utils/errors.js';
+import type { AWSConfig, BaseDynamoParameters } from './utils/types.js';
 
 export default async function (
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
-  { dynamoTableName }: Omit<BaseDynamoParameters, "type">
+  { dynamoTableName }: Omit<BaseDynamoParameters, 'type'>,
 ) {
   try {
     const dynamodbClient = new DynamoDBClient({
@@ -21,10 +21,10 @@ export default async function (
     const client = DynamoDBDocumentClient.from(dynamodbClient, {
       marshallOptions: { removeUndefinedValues: true },
     });
-
-    return await scanTable(client, dynamoTableName);
+    const result = await scanTable(client, dynamoTableName);
+    return result;
   } catch (error) {
-    core.error("source-dynamo: " + getErrorMessage(error));
+    core.error('source-dynamo: ' + getErrorMessage(error));
     throw error;
   }
 }

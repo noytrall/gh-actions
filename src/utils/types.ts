@@ -1,17 +1,14 @@
-import type {
-  GetObjectCommandInput,
-  PutObjectCommandInput,
-} from "@aws-sdk/client-s3";
-import z from "zod";
+import type { GetObjectCommandInput, PutObjectCommandInput } from '@aws-sdk/client-s3';
+import z from 'zod';
 
 const baseDynamoParametersSchema = z.object({
-  type: z.literal("dynamo"),
+  type: z.literal('dynamo'),
   dynamoTableName: z.string(),
 });
 export type BaseDynamoParameters = z.infer<typeof baseDynamoParametersSchema>;
 
 const baseS3ParametersSchema = z.object({
-  type: z.literal("s3"),
+  type: z.literal('s3'),
 });
 
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
@@ -44,34 +41,26 @@ const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
   tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
 });
 
-export type TargetDynamoParameters = z.infer<
-  typeof targetDynamoParametersSchema
->;
+export type TargetDynamoParameters = z.infer<typeof targetDynamoParametersSchema>;
 
 export const configSchema = z.object({
-  source: z.discriminatedUnion("type", [
-    baseDynamoParametersSchema,
-    sourceS3ParametersSchema,
-  ]),
-  target: z.discriminatedUnion("type", [
-    targetDynamoParametersSchema,
-    targetS3ParametersSchema,
-  ]),
+  source: z.discriminatedUnion('type', [baseDynamoParametersSchema, sourceS3ParametersSchema]),
+  target: z.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
 export type Config = z.infer<typeof configSchema>;
 
-export type DynamoData = Array<Record<string, unknown>>;
+export type DynamoData = Record<string, unknown>[];
 export type SourceData = DynamoData | Uint8Array | null;
 
 export type S3Data = Uint8Array;
 
-export type SourceType = "dynamo" | "s3";
-export type TargetType = "dynamo" | "s3";
+export type SourceType = 'dynamo' | 's3';
+export type TargetType = 'dynamo' | 's3';
 
-export type AWSConfig = {
+export interface AWSConfig {
   accessKeyId: string;
   region: string;
   secretAccessKey: string;
   sessionToken: string;
-};
+}

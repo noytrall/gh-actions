@@ -1,23 +1,19 @@
-import * as core from "@actions/core";
-import fs from "node:fs";
-import path from "node:path";
-import { getErrorMessage } from "../utils/errors.js";
-import {
-  type AWSConfig,
-  type Config,
-  type SourceData,
-} from "../utils/types.js";
-import targetDynamo from "../target-dynamo.js";
-import targetS3 from "../target-s3.js";
+import * as core from '@actions/core';
+import fs from 'node:fs';
+import path from 'node:path';
+import { getErrorMessage } from '../utils/errors.js';
+import { type AWSConfig, type Config, type SourceData } from '../utils/types.js';
+import targetDynamo from '../target-dynamo.js';
+import targetS3 from '../target-s3.js';
 
 async function run() {
   try {
-    const configPath = core.getInput("config-path", { required: true });
-    const transformedData = core.getInput("transformed-data");
-    const sourceDataInput = core.getInput("source-data", { required: true });
+    const configPath = core.getInput('config-path', { required: true });
+    const transformedData = core.getInput('transformed-data');
+    const sourceDataInput = core.getInput('source-data', { required: true });
 
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
-    const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+    const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
     const parsed = JSON.parse(sourceDataInput) as {
       data: SourceData;
@@ -25,49 +21,49 @@ async function run() {
       s3SourcedContentType: string | undefined;
     };
 
-    let { s3SourcedContentType, s3SourcedMetadata } = parsed;
+    let { s3SourcedContentType } = parsed;
+    const { s3SourcedMetadata } = parsed;
 
     let data: SourceData;
 
     try {
       data = JSON.parse(transformedData);
-      core.info("Transformed data");
-    } catch (error) {
+      core.info('Transformed data');
+    } catch {
       data = parsed.data;
-      core.info("Data from source");
+      core.info('Data from source');
     }
 
     const sourceType = config.source.type;
     const targetType = config.target.type;
     const targetAwsConfig: AWSConfig = {
-      region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION!,
+      region: process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION!,
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
       sessionToken: process.env.AWS_SESSION_TOKEN!,
     };
 
-    if (targetType === "dynamo") {
+    if (targetType === 'dynamo') {
       const {
         target: { dynamoTableName, purgeTable, tablePrimaryKey },
       } = config;
-      await targetDynamo(data, sourceType, targetAwsConfig, {
+      await targetDynamo(data, targetAwsConfig, {
         dynamoTableName,
         purgeTable,
         tablePrimaryKey,
       });
-    } else if (targetType === "s3") {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    } else if (targetType === 's3') {
       const {
         target: { s3Config },
       } = config;
 
-      if (sourceType === "dynamo") s3SourcedContentType = "application/json";
+      if (sourceType === 'dynamo') s3SourcedContentType = 'application/json';
 
       await targetS3(data, targetAwsConfig, {
-        s3Config: {
-          Metadata: s3SourcedMetadata,
-          ContentType: s3SourcedContentType,
-          ...s3Config,
-        },
+        Metadata: s3SourcedMetadata,
+        ContentType: s3SourcedContentType,
+        ...s3Config,
       });
     }
   } catch (error) {
@@ -75,4 +71,4 @@ async function run() {
   }
 }
 
-run();
+await run();

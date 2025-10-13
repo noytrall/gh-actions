@@ -1,21 +1,17 @@
-import * as core from "@actions/core";
-import fs from "node:fs";
-import path from "node:path";
-import sourceDynamo from "../source-dynamo.js";
-import sourceS3 from "../source-s3.js";
-import {
-  type AWSConfig,
-  type Config,
-  type SourceData,
-} from "../utils/types.js";
-import { getErrorMessage } from "../utils/errors.js";
+import * as core from '@actions/core';
+import fs from 'node:fs';
+import path from 'node:path';
+import sourceDynamo from '../source-dynamo.js';
+import sourceS3 from '../source-s3.js';
+import { type AWSConfig, type Config, type SourceData } from '../utils/types.js';
+import { getErrorMessage } from '../utils/errors.js';
 
 async function run() {
   try {
-    const configPath = core.getInput("config-path", { required: true });
+    const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
 
-    const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+    const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
     let sourceData: SourceData = null;
     let s3SourcedMetadata: Record<string, string> | undefined = undefined;
@@ -24,28 +20,27 @@ async function run() {
     const sourceType = config.source.type;
 
     const sourceAwsConfig: AWSConfig = {
-      region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION!,
+      region: process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION!,
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
       sessionToken: process.env.AWS_SESSION_TOKEN!,
     };
 
-    if (sourceType === "dynamo") {
+    if (sourceType === 'dynamo') {
       const {
         source: { dynamoTableName },
       } = config;
       sourceData = await sourceDynamo(sourceAwsConfig, {
         dynamoTableName,
       });
-    } else if (sourceType === "s3") {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    } else if (sourceType === 's3') {
       const {
         source: { s3Config },
       } = config;
-      const response = await sourceS3(sourceAwsConfig, {
-        s3Config,
-      });
+      const response = await sourceS3(sourceAwsConfig, s3Config);
 
-      if (!response.Body) throw new Error("No Body attribute in response");
+      if (!response.Body) throw new Error('No Body attribute in response');
       sourceData = await response.Body.transformToByteArray();
       s3SourcedContentType = response.ContentType;
       s3SourcedMetadata = response.Metadata;
@@ -53,20 +48,20 @@ async function run() {
 
     if (!sourceData) {
       // TODO: Handle this
-      throw new Error("Somehow, sourceData is null");
+      throw new Error('Somehow, sourceData is null');
     }
 
     core.setOutput(
-      "source-data",
+      'source-data',
       JSON.stringify({
         data: sourceData,
         s3SourcedMetadata,
         s3SourcedContentType,
-      })
+      }),
     );
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }
 }
 
-run();
+await run();

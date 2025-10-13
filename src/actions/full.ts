@@ -1,24 +1,19 @@
-import * as core from "@actions/core";
-import fs from "node:fs";
-import path from "node:path";
-import sourceDynamo from "../source-dynamo.js";
-import sourceS3 from "../source-s3.js";
-import targetDynamo from "../target-dynamo.js";
-import targetS3 from "../target-s3.js";
-import { getErrorMessage } from "../utils/errors.js";
-import {
-  configSchema,
-  type AWSConfig,
-  type Config,
-  type SourceData,
-} from "../utils/types.js";
+import * as core from '@actions/core';
+import fs from 'node:fs';
+import path from 'node:path';
+import sourceDynamo from '../source-dynamo.js';
+import sourceS3 from '../source-s3.js';
+import targetDynamo from '../target-dynamo.js';
+import targetS3 from '../target-s3.js';
+import { getErrorMessage } from '../utils/errors.js';
+import { configSchema, type AWSConfig, type Config, type SourceData } from '../utils/types.js';
 
 async function run() {
   try {
-    const configPath = core.getInput("config-path", { required: true });
+    const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
 
-    const config: Config = JSON.parse(fs.readFileSync(fullPath, "utf8"));
+    const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
     const result = configSchema.safeParse(config);
 
@@ -32,18 +27,18 @@ async function run() {
       targetAwsSecretAccessKey,
       targetAwsSessionToken,
     ] = [
-      "source-aws-region",
-      "source-aws-access-key-id",
-      "source-aws-secret-access-key",
-      "source-aws-session-token",
-      "target-aws-region",
-      "target-aws-access-key-id",
-      "target-aws-secret-access-key",
-      "target-aws-session-token",
+      'source-aws-region',
+      'source-aws-access-key-id',
+      'source-aws-secret-access-key',
+      'source-aws-session-token',
+      'target-aws-region',
+      'target-aws-access-key-id',
+      'target-aws-secret-access-key',
+      'target-aws-session-token',
     ].map((key) =>
       core.getInput(key, {
         required: true,
-      })
+      }),
     ) as [string, string, string, string, string, string, string, string];
 
     core.setSecret(sourceAwsAccessKeyId);
@@ -54,7 +49,7 @@ async function run() {
     core.setSecret(targetAwsSessionToken);
 
     if (result.error) {
-      core.error("parseResult: " + JSON.stringify(result, null, 2));
+      core.error('parseResult: ' + JSON.stringify(result, null, 2));
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
@@ -78,22 +73,21 @@ async function run() {
       sessionToken: targetAwsSessionToken,
     };
 
-    if (sourceType === "dynamo") {
+    if (sourceType === 'dynamo') {
       const {
         source: { dynamoTableName },
       } = config;
       sourceData = await sourceDynamo(sourceAwsConfig, {
         dynamoTableName,
       });
-    } else if (sourceType === "s3") {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    } else if (sourceType === 's3') {
       const {
         source: { s3Config },
       } = config;
-      const response = await sourceS3(sourceAwsConfig, {
-        s3Config,
-      });
+      const response = await sourceS3(sourceAwsConfig, s3Config);
 
-      if (!response.Body) throw new Error("No Body attribute in response");
+      if (!response.Body) throw new Error('No Body attribute in response');
       sourceData = await response.Body.transformToByteArray();
       s3SourcedContentType = response.ContentType;
       s3SourcedMetadata = response.Metadata;
@@ -101,31 +95,30 @@ async function run() {
 
     if (!sourceData) {
       // TODO: Handle this
-      throw new Error("Somehow, sourceData is null");
+      throw new Error('Somehow, sourceData is null');
     }
 
-    if (targetType === "dynamo") {
+    if (targetType === 'dynamo') {
       const {
         target: { dynamoTableName, purgeTable, tablePrimaryKey },
       } = config;
-      await targetDynamo(sourceData, sourceType, targetAwsConfig, {
+      await targetDynamo(sourceData, targetAwsConfig, {
         dynamoTableName,
         purgeTable,
         tablePrimaryKey,
       });
-    } else if (targetType === "s3") {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    } else if (targetType === 's3') {
       const {
         target: { s3Config },
       } = config;
 
-      if (sourceType === "dynamo") s3SourcedContentType = "application/json";
+      if (sourceType === 'dynamo') s3SourcedContentType = 'application/json';
 
       await targetS3(sourceData, targetAwsConfig, {
-        s3Config: {
-          Metadata: s3SourcedMetadata,
-          ContentType: s3SourcedContentType,
-          ...s3Config,
-        },
+        Metadata: s3SourcedMetadata,
+        ContentType: s3SourcedContentType,
+        ...s3Config,
       });
     }
   } catch (error) {
@@ -133,4 +126,4 @@ async function run() {
   }
 }
 
-run();
+await run();

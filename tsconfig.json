@@ -1,14 +1,28 @@
 // tsconfig.json
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "bundler",
+    "useUnknownInCatchVariables": true,
+    "allowSyntheticDefaultImports": true,
+    "allowUnusedLabels": false,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "lib": ["ESNext"],
+    "removeComments": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
     "esModuleInterop": true,
-    "strict": true,
     "skipLibCheck": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "checkJs": true,
+    "allowImportingTsExtensions": false,
     "types": ["vitest/globals"]
   },
   "include": ["src"], // Includes the `src` directory in the project
-  "exclude": ["node_modules", "dist"] // Excludes `node_modules` and `dist` directories from the project
+  "exclude": ["node_modules", "actions"] // Excludes `node_modules` and `dist` directories from the project
 }

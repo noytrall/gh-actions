@@ -1,42 +1,26 @@
-export const chunk = <T>(array: Array<T>, length: number): T[][] => {
+export const chunk = <T>(array: T[], length: number): T[][] => {
   const chunks: T[][] = [];
 
-  for (let i = 0; i < array.length; i += length)
-    chunks.push(array.slice(i, i + length));
+  for (let i = 0; i < array.length; i += length) chunks.push(array.slice(i, i + length));
 
   return chunks;
 };
 
-export const isString = (value: any): value is string =>
-  typeof value === "string";
+export const isString = (value: unknown): value is string => typeof value === 'string';
 
-export const isNumber = (value: any): value is number =>
-  typeof value === "number";
+export const isNumber = (value: unknown): value is number => typeof value === 'number';
 
-export const isArray = <T = unknown>(value: any): value is Array<T> =>
-  Array.isArray(value);
+export const isArray = <T = unknown>(value: unknown): value is T[] => Array.isArray(value);
 
-export const isObject = (value: any): value is Object =>
-  value !== null && typeof value === "object";
+export const isObject = (value: unknown): value is object => value !== null && typeof value === 'object';
 
-export const isRecord = (value: any): value is Record<string, unknown> =>
-  value !== null && typeof value === "object" && !isArray(value);
+export const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !isArray(value);
 
-export const isArrayOfRecords = (
-  value: any,
-  force?: boolean
-): value is Array<Record<string, unknown>> => {
-  if (force !== undefined) return force;
-
+export const isArrayOfRecords = (value: unknown): value is Record<string, unknown>[] => {
   return isArray(value) && value.every(isRecord);
 };
 
-export const isUint8Array = (value: any): value is Uint8Array => {
-  return isArray(value) && value.every(isNumber);
-};
-
-export const isUint8ArrayStringifiedAndParsed = (
-  value: any
-): value is Record<string, number> => {
-  return isObject(value) && Object.values(value).every(isNumber);
+export const isUint8ArrayStringifiedAndParsed = (value: unknown): value is Record<string, number> => {
+  return isRecord(value) && Object.values(value).every(isNumber);
 };

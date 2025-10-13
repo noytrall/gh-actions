@@ -1,18 +1,14 @@
-import * as core from "@actions/core";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { isUint8Array } from "util/types";
-import { getErrorMessage } from "./utils/errors.js";
-import { isArrayOfRecords } from "./utils/nodash.js";
-import type {
-  AWSConfig,
-  SourceData,
-  TargetS3Parameters,
-} from "./utils/types.js";
+import * as core from '@actions/core';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { isUint8Array } from 'util/types';
+import { getErrorMessage } from './utils/errors.js';
+import { isArrayOfRecords } from './utils/nodash.js';
+import type { AWSConfig, SourceData, TargetS3Parameters } from './utils/types.js';
 
 export default async function (
   sourceData: SourceData,
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
-  { s3Config }: Omit<TargetS3Parameters, "type">
+  s3Config: TargetS3Parameters['s3Config'],
 ) {
   try {
     let data = sourceData;
@@ -23,7 +19,7 @@ export default async function (
     }
 
     if (!isUint8Array(data)) {
-      throw new Error("Something HERE");
+      throw new Error('Data type is invalid and cannot be used in PutObjectCommand');
     }
 
     const s3Client = new S3Client({
@@ -40,10 +36,10 @@ export default async function (
       ...s3Config,
     });
 
-    core.info("Putting object in bucket: " + s3Config.Bucket);
+    core.info('Putting object in bucket: ' + s3Config.Bucket);
     return await s3Client.send(command);
   } catch (error) {
-    core.error("target-s3: " + getErrorMessage(error));
+    core.error('target-s3: ' + getErrorMessage(error));
     throw error;
   }
 }
