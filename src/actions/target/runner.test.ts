@@ -3,7 +3,7 @@ import runner from './runner.js';
 import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
 import { getInput, setFailed } from '@actions/core';
-import type { Config } from '../../utils/types.js';
+import type { AWSConfig, Config } from '../../utils/types.js';
 
 vi.mock('@actions/core');
 vi.mock('node:fs');
@@ -23,22 +23,31 @@ const targetDynamoMock = vi.mocked(targetDynamo);
 const targetS3Mock = vi.mocked(targetS3);
 const coreGetInputMock = vi.mocked(getInput);
 
+process.env.GITHUB_WORKSPACE = '/workspace';
+process.env.AWS_REGION = 'eu-west-1';
+process.env.AWS_ACCESS_KEY_ID = 'key';
+process.env.AWS_SECRET_ACCESS_KEY = 'secret';
+process.env.AWS_SESSION_TOKEN = 'token';
+
+const targetAwsConfig: AWSConfig = {
+  region: process.env.AWS_REGION,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  sessionToken: process.env.AWS_SESSION_TOKEN,
+};
+
+const sourceData: Record<string, unknown>[] = [];
+
 describe('target', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-
-    process.env.GITHUB_WORKSPACE = '/workspace';
-    process.env.AWS_REGION = 'eu-west-1';
-    process.env.AWS_ACCESS_KEY_ID = 'key';
-    process.env.AWS_SECRET_ACCESS_KEY = 'secret';
-    process.env.AWS_SESSION_TOKEN = 'token';
   });
 
   it('should flow with target="dynamo"', async () => {
     coreGetInputMock.mockImplementation((name: string) => {
       if (name === 'config-path') return 'config.json';
-      if (name === 'source-data') return JSON.stringify({ data: [{ id: 1 }] });
-      if (name === 'transformed-data') return '';
+      if (name === 'source-data-input-path') return 'source-data-input.json';
+      if (name === 's3-info') return JSON.stringify({});
       throw new Error('unexpected input ' + name);
     });
 
@@ -46,10 +55,17 @@ describe('target', () => {
       source: { type: 'dynamo', dynamoTableName: 'source-table' },
       target: { type: 'dynamo', dynamoTableName: 'target-table', purgeTable: false },
     };
-    readFileSyncMock.mockReturnValue(JSON.stringify(config));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(config));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(sourceData));
     await runner();
 
-    expect(targetDynamoMock).toHaveBeenCalledTimes(1);
+    expect(readFileSync).toHaveBeenNthCalledWith(1, expect.stringContaining('config.json'), 'utf8');
+    expect(readFileSync).toHaveBeenNthCalledWith(2, expect.stringContaining('source-data-input.json'), 'utf8');
+    expect(targetDynamoMock).toHaveBeenCalledExactlyOnceWith(sourceData, targetAwsConfig, {
+      dynamoTableName: 'target-table',
+      purgeTable: false,
+      tablePrimaryKey: undefined,
+    });
     expect(targetS3Mock).not.toHaveBeenCalled();
     expect(setFailed).not.toHaveBeenCalled();
   });
@@ -57,8 +73,8 @@ describe('target', () => {
   it('should flow with target="s3"', async () => {
     coreGetInputMock.mockImplementation((name: string) => {
       if (name === 'config-path') return 'config.json';
-      if (name === 'source-data') return JSON.stringify({ data: [{ id: 1 }] });
-      if (name === 'transformed-data') return '[{}]';
+      if (name === 'source-data-input-path') return '';
+      if (name === 's3-info') return '';
       throw new Error('unexpected input ' + name);
     });
 
@@ -66,19 +82,27 @@ describe('target', () => {
       source: { type: 'dynamo', dynamoTableName: 'source-table' },
       target: { type: 's3', s3Config: { Bucket: 'bucket', Key: 'key' } },
     };
-    readFileSyncMock.mockReturnValue(JSON.stringify(config));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(config));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(sourceData));
     await runner();
 
+    expect(readFileSync).toHaveBeenNthCalledWith(1, expect.stringContaining('config.json'), 'utf8');
+    expect(readFileSync).toHaveBeenNthCalledWith(2, expect.stringContaining('source-data-path'), 'utf8');
     expect(targetDynamoMock).not.toHaveBeenCalled();
-    expect(targetS3Mock).toHaveBeenCalledTimes(1);
+    expect(targetS3Mock).toHaveBeenCalledExactlyOnceWith(sourceData, targetAwsConfig, {
+      Metadata: undefined,
+      ContentType: 'application/json',
+      Bucket: 'bucket',
+      Key: 'key',
+    });
     expect(setFailed).not.toHaveBeenCalled();
   });
 
   it('should throw an error when config is invalid', async () => {
     coreGetInputMock.mockImplementation((name: string) => {
       if (name === 'config-path') return 'config.json';
-      if (name === 'source-data') return JSON.stringify({ data: [{ id: 1 }] });
-      if (name === 'transformed-data') return '[{}]';
+      if (name === 'source-data-input-path') return 'source-data-input.json';
+      if (name === 's3-info') return '';
       throw new Error('unexpected input ' + name);
     });
 
@@ -86,7 +110,7 @@ describe('target', () => {
       source: { type: 'dynamo' },
       target: { type: 's3', s3Config: { Bucket: 'bucket', Key: 'key' } },
     };
-    readFileSyncMock.mockReturnValue(JSON.stringify(config));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(config));
     await runner();
 
     expect(targetDynamoMock).not.toHaveBeenCalled();

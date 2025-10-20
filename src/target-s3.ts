@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { isUint8Array } from 'util/types';
 import { getErrorMessage } from './utils/errors.js';
-import { isArrayOfRecords } from './utils/nodash.js';
+import { isArrayOfRecords, isUint8ArrayStringifiedAndParsed } from './utils/nodash.js';
 import type { AWSConfig, SourceData, TargetS3Parameters } from './utils/types.js';
 
 export async function targetS3(
@@ -16,6 +16,11 @@ export async function targetS3(
     if (isArrayOfRecords(data)) {
       const encoder = new TextEncoder();
       data = encoder.encode(JSON.stringify(data));
+    }
+
+    if (isUint8ArrayStringifiedAndParsed(data)) {
+      core.info('IS Uint8Array Stringified and Parsed');
+      data = new Uint8Array(Object.values(data));
     }
 
     if (!isUint8Array(data)) {

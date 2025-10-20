@@ -8,6 +8,7 @@ import { getErrorMessage } from '../../utils/errors.js';
 
 export default async function () {
   try {
+    const outputFilePath = core.getInput('source-data-output-path') || 'source-data-path';
     const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
 
@@ -56,15 +57,17 @@ export default async function () {
       // TODO: Handle this
       throw new Error('Somehow, sourceData is null');
     }
+    fs.writeFileSync(path.resolve(process.env.GITHUB_WORKSPACE!, outputFilePath), JSON.stringify(sourceData));
 
-    core.setOutput(
-      'source-data',
-      JSON.stringify({
-        data: sourceData,
-        s3SourcedMetadata,
-        s3SourcedContentType,
-      }),
-    );
+    if (config.target.type === 's3') {
+      core.setOutput(
+        's3-info',
+        JSON.stringify({
+          Metadata: s3SourcedMetadata,
+          ContentType: s3SourcedContentType,
+        }),
+      );
+    }
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }

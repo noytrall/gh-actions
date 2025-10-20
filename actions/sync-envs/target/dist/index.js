@@ -76776,6 +76776,10 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
             const encoder = new TextEncoder();
             data = encoder.encode(JSON.stringify(data));
         }
+        if (isUint8ArrayStringifiedAndParsed(data)) {
+            core.info('IS Uint8Array Stringified and Parsed');
+            data = new Uint8Array(Object.values(data));
+        }
         if (!(0,types_.isUint8Array)(data)) {
             throw new Error('Data type is invalid and cannot be used in PutObjectCommand');
         }
@@ -76811,8 +76815,6 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
 /* harmony default export */ async function runner() {
     try {
         const configPath = core.getInput('config-path', { required: true });
-        const transformedData = core.getInput('transformed-data');
-        const sourceDataInput = core.getInput('source-data', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
         const result = configSchema.safeParse(config);
@@ -76820,18 +76822,13 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
             core.error('parseResult: ' + JSON.stringify(result, null, 2));
             throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
-        const parsed = JSON.parse(sourceDataInput);
-        let { s3SourcedContentType } = parsed;
-        const { s3SourcedMetadata } = parsed;
-        let data;
-        try {
-            data = JSON.parse(transformedData);
-            core.info('Transformed data');
-        }
-        catch {
-            data = parsed.data;
-            core.info('Data from source');
-        }
+        const s3InfoInput = core.getInput('s3-info');
+        const s3Info = JSON.parse(s3InfoInput || '{}');
+        const sourceDataInputPathInput = core.getInput('source-data-input-path') || 'source-data-path';
+        const sourceDataFullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, sourceDataInputPathInput);
+        const data = JSON.parse(external_node_fs_default().readFileSync(sourceDataFullPath, 'utf8'));
+        let { ContentType: s3SourcedContentType } = s3Info;
+        const { Metadata: s3SourcedMetadata } = s3Info;
         const sourceType = config.source.type;
         const targetType = config.target.type;
         const targetAwsConfig = {

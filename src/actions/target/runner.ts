@@ -9,8 +9,6 @@ import { targetS3 } from '../../target-s3.js';
 export default async function () {
   try {
     const configPath = core.getInput('config-path', { required: true });
-    const transformedData = core.getInput('transformed-data');
-    const sourceDataInput = core.getInput('source-data', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
     const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
@@ -20,24 +18,15 @@ export default async function () {
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
-    const parsed = JSON.parse(sourceDataInput) as {
-      data: SourceData;
-      s3SourcedMetadata: Record<string, string> | undefined;
-      s3SourcedContentType: string | undefined;
-    };
+    const s3InfoInput = core.getInput('s3-info');
+    const s3Info = JSON.parse(s3InfoInput || '{}');
 
-    let { s3SourcedContentType } = parsed;
-    const { s3SourcedMetadata } = parsed;
+    const sourceDataInputPathInput = core.getInput('source-data-input-path') || 'source-data-path';
+    const sourceDataFullPath = path.resolve(process.env.GITHUB_WORKSPACE!, sourceDataInputPathInput);
+    const data: SourceData = JSON.parse(fs.readFileSync(sourceDataFullPath, 'utf8'));
 
-    let data: SourceData;
-
-    try {
-      data = JSON.parse(transformedData);
-      core.info('Transformed data');
-    } catch {
-      data = parsed.data;
-      core.info('Data from source');
-    }
+    let { ContentType: s3SourcedContentType } = s3Info;
+    const { Metadata: s3SourcedMetadata } = s3Info;
 
     const sourceType = config.source.type;
     const targetType = config.target.type;

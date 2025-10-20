@@ -76768,6 +76768,7 @@ const configSchema = zod.object({
 
 /* harmony default export */ async function runner() {
     try {
+        const outputFilePath = lib_core.getInput('source-data-output-path') || 'source-data-path';
         const configPath = lib_core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
@@ -76804,11 +76805,13 @@ const configSchema = zod.object({
         if (!sourceData) {
             throw new Error('Somehow, sourceData is null');
         }
-        lib_core.setOutput('source-data', JSON.stringify({
-            data: sourceData,
-            s3SourcedMetadata,
-            s3SourcedContentType,
-        }));
+        external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, outputFilePath), JSON.stringify(sourceData));
+        if (config.target.type === 's3') {
+            lib_core.setOutput('s3-info', JSON.stringify({
+                Metadata: s3SourcedMetadata,
+                ContentType: s3SourcedContentType,
+            }));
+        }
     }
     catch (error) {
         lib_core.setFailed(errors_getErrorMessage(error));

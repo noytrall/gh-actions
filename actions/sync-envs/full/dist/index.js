@@ -64295,6 +64295,10 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
             const encoder = new TextEncoder();
             data = encoder.encode(JSON.stringify(data));
         }
+        if (isUint8ArrayStringifiedAndParsed(data)) {
+            core.info('IS Uint8Array Stringified and Parsed');
+            data = new Uint8Array(Object.values(data));
+        }
         if (!(0,types_.isUint8Array)(data)) {
             throw new Error('Data type is invalid and cannot be used in PutObjectCommand');
         }
