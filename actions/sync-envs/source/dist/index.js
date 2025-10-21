@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5147);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4739);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 5147:
+/***/ 4739:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -76758,7 +76758,11 @@ const configSchema = zod.object({
     target: zod.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
+;// CONCATENATED MODULE: ./src/utils/files.ts
+const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
+
 ;// CONCATENATED MODULE: ./src/actions/source/runner.ts
+
 
 
 
@@ -76768,7 +76772,6 @@ const configSchema = zod.object({
 
 /* harmony default export */ async function runner() {
     try {
-        const outputFilePath = lib_core.getInput('source-data-output-path') || 'source-data-path';
         const configPath = lib_core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
@@ -76805,7 +76808,7 @@ const configSchema = zod.object({
         if (!sourceData) {
             throw new Error('Somehow, sourceData is null');
         }
-        external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, outputFilePath), JSON.stringify(sourceData));
+        external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData));
         if (config.target.type === 's3') {
             lib_core.setOutput('s3-info', JSON.stringify({
                 Metadata: s3SourcedMetadata,

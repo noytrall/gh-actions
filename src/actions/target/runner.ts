@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../utils/errors.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
 import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
+import { SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
 
 export default async function () {
   try {
@@ -21,8 +22,7 @@ export default async function () {
     const s3InfoInput = core.getInput('s3-info');
     const s3Info = JSON.parse(s3InfoInput || '{}');
 
-    const sourceDataInputPathInput = core.getInput('source-data-input-path') || 'source-data-path';
-    const sourceDataFullPath = path.resolve(process.env.GITHUB_WORKSPACE!, sourceDataInputPathInput);
+    const sourceDataFullPath = path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH);
     const data: SourceData = JSON.parse(fs.readFileSync(sourceDataFullPath, 'utf8'));
 
     let { ContentType: s3SourcedContentType } = s3Info;

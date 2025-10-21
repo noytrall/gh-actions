@@ -3,13 +3,8 @@ description: Let us synchronize environments!
 
 inputs:
   config-path:
-    description: "Path to a JSON configuration file"
+    description: 'Path to a JSON configuration file'
     required: true
-  source-data:
-    description: "data from source"
-    required: true
-  transformed-data:
-    description: "data from middleware"
 
 runs:
   using: node24

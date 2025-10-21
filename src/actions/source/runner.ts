@@ -5,10 +5,10 @@ import { sourceDynamo } from '../../source-dynamo.js';
 import { sourceS3 } from '../../source-s3.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
 import { getErrorMessage } from '../../utils/errors.js';
+import { SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
 
 export default async function () {
   try {
-    const outputFilePath = core.getInput('source-data-output-path') || 'source-data-path';
     const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
 
@@ -57,7 +57,7 @@ export default async function () {
       // TODO: Handle this
       throw new Error('Somehow, sourceData is null');
     }
-    fs.writeFileSync(path.resolve(process.env.GITHUB_WORKSPACE!, outputFilePath), JSON.stringify(sourceData));
+    fs.writeFileSync(path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData));
 
     if (config.target.type === 's3') {
       core.setOutput(

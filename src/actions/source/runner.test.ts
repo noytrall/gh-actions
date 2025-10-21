@@ -5,6 +5,7 @@ import { sourceS3 } from '../../source-s3';
 import type { AWSConfig, Config, SourceData } from '../../utils/types';
 import runner from './runner';
 import type { GetObjectCommandOutput } from '@aws-sdk/client-s3';
+import { SOURCE_DATA_FILE_PATH } from '../../utils/files';
 
 vi.mock('@actions/core');
 vi.mock('node:fs');
@@ -47,7 +48,6 @@ describe('source', () => {
 
   it('should flow with source="dynamo"', async () => {
     coreGetInputMock.mockImplementation((name: string) => {
-      if (name === 'source-data-output-path') return 'source-data.json';
       if (name === 'config-path') return 'config.json';
       throw new Error('unexpected input ' + name);
     });
@@ -65,7 +65,7 @@ describe('source', () => {
     expect(sourceS3Mock).not.toHaveBeenCalled();
     expect(setOutput).not.toHaveBeenCalled();
     expect(writeFileSync).toHaveBeenCalledExactlyOnceWith(
-      expect.stringContaining('source-data.json'),
+      expect.stringContaining(SOURCE_DATA_FILE_PATH),
       JSON.stringify(sourceData),
     );
     expect(setFailed).not.toHaveBeenCalled();
@@ -73,7 +73,6 @@ describe('source', () => {
 
   it('should flow with source="s3"', async () => {
     coreGetInputMock.mockImplementation((name: string) => {
-      if (name === 'source-data-output-path') return '';
       if (name === 'config-path') return 'config.json';
       throw new Error('unexpected input ' + name);
     });
@@ -98,7 +97,7 @@ describe('source', () => {
       Key: 'source-key',
     });
     expect(writeFileSync).toHaveBeenCalledExactlyOnceWith(
-      expect.stringContaining('source-data-path'),
+      expect.stringContaining(SOURCE_DATA_FILE_PATH),
       JSON.stringify(sourceData),
     );
     expect(setOutput).toHaveBeenCalledExactlyOnceWith('s3-info', '{}');

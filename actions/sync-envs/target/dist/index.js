@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(4718);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(776);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 4718:
+/***/ 776:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -76804,7 +76804,11 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
     }
 }
 
+;// CONCATENATED MODULE: ./src/utils/files.ts
+const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
+
 ;// CONCATENATED MODULE: ./src/actions/target/runner.ts
+
 
 
 
@@ -76824,8 +76828,7 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
         }
         const s3InfoInput = core.getInput('s3-info');
         const s3Info = JSON.parse(s3InfoInput || '{}');
-        const sourceDataInputPathInput = core.getInput('source-data-input-path') || 'source-data-path';
-        const sourceDataFullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, sourceDataInputPathInput);
+        const sourceDataFullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH);
         const data = JSON.parse(external_node_fs_default().readFileSync(sourceDataFullPath, 'utf8'));
         let { ContentType: s3SourcedContentType } = s3Info;
         const { Metadata: s3SourcedMetadata } = s3Info;
