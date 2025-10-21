@@ -13,7 +13,7 @@ let a = 1;
 a = 1;
 
 export default async function () {
-  const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/transform-data.js');
+  const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/gh-actions/transform-data.js');
 
   if (!fs.existsSync(p)) {
     throw new Error(`Script not found: ${p}`);
