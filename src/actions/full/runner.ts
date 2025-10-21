@@ -13,6 +13,8 @@ let a = 1;
 a = 1;
 
 export default async function () {
+  console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE!);
+  console.log('__DIRNAME', __dirname);
   const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/gh-actions/transform-data.js');
 
   if (!fs.existsSync(p)) {

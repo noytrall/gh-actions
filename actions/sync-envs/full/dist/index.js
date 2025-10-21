@@ -76872,6 +76872,8 @@ const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(impor
 let a = 1;
 a = 1;
 /* harmony default export */ async function runner() {
+    console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE);
+    console.log('__DIRNAME', __dirname);
     const p = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, 'src/scripts/gh-actions/transform-data.js');
     if (!external_node_fs_default().existsSync(p)) {
         throw new Error(`Script not found: ${p}`);
