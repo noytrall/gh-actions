@@ -4,7 +4,7 @@ import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
 import { getInput, setFailed } from '@actions/core';
 import type { AWSConfig, Config } from '../../utils/types.js';
-import { SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
+import { S3_INFO_FILE_PATH, SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
 
 vi.mock('@actions/core');
 vi.mock('node:fs');
@@ -47,7 +47,6 @@ describe('target', () => {
   it('should flow with target="dynamo"', async () => {
     coreGetInputMock.mockImplementation((name: string) => {
       if (name === 'config-path') return 'config.json';
-      if (name === 's3-info') return JSON.stringify({});
       throw new Error('unexpected input ' + name);
     });
 
@@ -71,9 +70,9 @@ describe('target', () => {
   });
 
   it('should flow with target="s3"', async () => {
+    const s3Info = { Metadata: undefined, ContentType: undefined };
     coreGetInputMock.mockImplementation((name: string) => {
       if (name === 'config-path') return 'config.json';
-      if (name === 's3-info') return '';
       throw new Error('unexpected input ' + name);
     });
 
@@ -83,10 +82,12 @@ describe('target', () => {
     };
     readFileSyncMock.mockReturnValueOnce(JSON.stringify(config));
     readFileSyncMock.mockReturnValueOnce(JSON.stringify(sourceData));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(s3Info));
     await runner();
 
     expect(readFileSync).toHaveBeenNthCalledWith(1, expect.stringContaining('config.json'), 'utf8');
     expect(readFileSync).toHaveBeenNthCalledWith(2, expect.stringContaining(SOURCE_DATA_FILE_PATH), 'utf8');
+    expect(readFileSync).toHaveBeenNthCalledWith(3, expect.stringContaining(S3_INFO_FILE_PATH), 'utf8');
     expect(targetDynamoMock).not.toHaveBeenCalled();
     expect(targetS3Mock).toHaveBeenCalledExactlyOnceWith(sourceData, targetAwsConfig, {
       Metadata: undefined,

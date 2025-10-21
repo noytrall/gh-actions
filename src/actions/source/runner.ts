@@ -5,7 +5,7 @@ import { sourceDynamo } from '../../source-dynamo.js';
 import { sourceS3 } from '../../source-s3.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
 import { getErrorMessage } from '../../utils/errors.js';
-import { SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
+import { S3_INFO_FILE_PATH, SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
 
 export default async function () {
   try {
@@ -65,12 +65,13 @@ export default async function () {
     );
 
     if (config.target.type === 's3') {
-      core.setOutput(
-        's3-info',
+      fs.writeFileSync(
+        path.resolve(process.env.GITHUB_WORKSPACE!, S3_INFO_FILE_PATH),
         JSON.stringify({
           Metadata: s3SourcedMetadata,
           ContentType: s3SourcedContentType,
         }),
+        'utf-8',
       );
     }
   } catch (error) {

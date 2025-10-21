@@ -76806,6 +76806,7 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
 
 ;// CONCATENATED MODULE: ./src/utils/files.ts
 const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
+const S3_INFO_FILE_PATH = 'source-data-file-path';
 
 ;// CONCATENATED MODULE: ./src/actions/target/runner.ts
 
@@ -76826,13 +76827,9 @@ const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
             core.error('parseResult: ' + JSON.stringify(result, null, 2));
             throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
-        const s3InfoInput = core.getInput('s3-info');
-        const s3Info = JSON.parse(s3InfoInput || '{}');
         const sourceDataFullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH);
-        core.info('READING FROM: ' + sourceDataFullPath);
+        core.info('READING DATA FROM: ' + sourceDataFullPath);
         const data = JSON.parse(external_node_fs_default().readFileSync(sourceDataFullPath, 'utf8'));
-        let { ContentType: s3SourcedContentType } = s3Info;
-        const { Metadata: s3SourcedMetadata } = s3Info;
         const sourceType = config.source.type;
         const targetType = config.target.type;
         const targetAwsConfig = {
@@ -76850,6 +76847,11 @@ const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
             });
         }
         else if (targetType === 's3') {
+            const s3InfoPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, S3_INFO_FILE_PATH);
+            core.info('READING S3 FROM: ' + s3InfoPath);
+            const s3Info = JSON.parse(external_node_fs_default().readFileSync(s3InfoPath, 'utf8'));
+            let { ContentType: s3SourcedContentType } = s3Info;
+            const { Metadata: s3SourcedMetadata } = s3Info;
             const { target: { s3Config }, } = config;
             if (sourceType === 'dynamo')
                 s3SourcedContentType = 'application/json';

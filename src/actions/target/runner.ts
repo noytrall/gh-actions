@@ -5,7 +5,7 @@ import { getErrorMessage } from '../../utils/errors.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
 import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
-import { SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
+import { S3_INFO_FILE_PATH, SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
 
 export default async function () {
   try {
@@ -19,15 +19,9 @@ export default async function () {
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
-    const s3InfoInput = core.getInput('s3-info');
-    const s3Info = JSON.parse(s3InfoInput || '{}');
-
     const sourceDataFullPath = path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH);
-    core.info('READING FROM: ' + sourceDataFullPath);
+    core.info('READING DATA FROM: ' + sourceDataFullPath);
     const data: SourceData = JSON.parse(fs.readFileSync(sourceDataFullPath, 'utf8'));
-
-    let { ContentType: s3SourcedContentType } = s3Info;
-    const { Metadata: s3SourcedMetadata } = s3Info;
 
     const sourceType = config.source.type;
     const targetType = config.target.type;
@@ -49,6 +43,12 @@ export default async function () {
       });
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (targetType === 's3') {
+      const s3InfoPath = path.resolve(process.env.GITHUB_WORKSPACE!, S3_INFO_FILE_PATH);
+      core.info('READING S3 FROM: ' + s3InfoPath);
+      const s3Info = JSON.parse(fs.readFileSync(s3InfoPath, 'utf8'));
+      let { ContentType: s3SourcedContentType } = s3Info;
+      const { Metadata: s3SourcedMetadata } = s3Info;
+
       const {
         target: { s3Config },
       } = config;

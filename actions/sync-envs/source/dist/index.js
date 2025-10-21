@@ -76760,6 +76760,7 @@ const configSchema = zod.object({
 
 ;// CONCATENATED MODULE: ./src/utils/files.ts
 const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
+const S3_INFO_FILE_PATH = 'source-data-file-path';
 
 ;// CONCATENATED MODULE: ./src/actions/source/runner.ts
 
@@ -76811,10 +76812,10 @@ const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
         lib_core.info('WRITTING TO: ' + external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH));
         external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData), 'utf-8');
         if (config.target.type === 's3') {
-            lib_core.setOutput('s3-info', JSON.stringify({
+            external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, S3_INFO_FILE_PATH), JSON.stringify({
                 Metadata: s3SourcedMetadata,
                 ContentType: s3SourcedContentType,
-            }));
+            }), 'utf-8');
         }
     }
     catch (error) {

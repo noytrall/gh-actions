@@ -5,7 +5,7 @@ import { sourceS3 } from '../../source-s3';
 import type { AWSConfig, Config, SourceData } from '../../utils/types';
 import runner from './runner';
 import type { GetObjectCommandOutput } from '@aws-sdk/client-s3';
-import { SOURCE_DATA_FILE_PATH } from '../../utils/files';
+import { S3_INFO_FILE_PATH, SOURCE_DATA_FILE_PATH } from '../../utils/files';
 
 vi.mock('@actions/core');
 vi.mock('node:fs');
@@ -67,6 +67,7 @@ describe('source', () => {
     expect(writeFileSync).toHaveBeenCalledExactlyOnceWith(
       expect.stringContaining(SOURCE_DATA_FILE_PATH),
       JSON.stringify(sourceData),
+      'utf-8',
     );
     expect(setFailed).not.toHaveBeenCalled();
   });
@@ -96,11 +97,18 @@ describe('source', () => {
       Bucket: 'source-bucket',
       Key: 'source-key',
     });
-    expect(writeFileSync).toHaveBeenCalledExactlyOnceWith(
+    expect(writeFileSync).toHaveBeenNthCalledWith(
+      1,
       expect.stringContaining(SOURCE_DATA_FILE_PATH),
       JSON.stringify(sourceData),
+      'utf-8',
     );
-    expect(setOutput).toHaveBeenCalledExactlyOnceWith('s3-info', '{}');
+    expect(writeFileSync).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining(S3_INFO_FILE_PATH),
+      JSON.stringify({}),
+      'utf-8',
+    );
     expect(setFailed).not.toHaveBeenCalled();
   });
 
