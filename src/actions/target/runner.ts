@@ -23,6 +23,7 @@ export default async function () {
     const s3Info = JSON.parse(s3InfoInput || '{}');
 
     const sourceDataFullPath = path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH);
+    core.info('READING FROM: ' + sourceDataFullPath);
     const data: SourceData = JSON.parse(fs.readFileSync(sourceDataFullPath, 'utf8'));
 
     let { ContentType: s3SourcedContentType } = s3Info;

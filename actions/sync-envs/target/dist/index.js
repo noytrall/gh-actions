@@ -76829,6 +76829,7 @@ const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
         const s3InfoInput = core.getInput('s3-info');
         const s3Info = JSON.parse(s3InfoInput || '{}');
         const sourceDataFullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH);
+        core.info('READING FROM: ' + sourceDataFullPath);
         const data = JSON.parse(external_node_fs_default().readFileSync(sourceDataFullPath, 'utf8'));
         let { ContentType: s3SourcedContentType } = s3Info;
         const { Metadata: s3SourcedMetadata } = s3Info;
