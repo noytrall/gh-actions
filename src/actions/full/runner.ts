@@ -14,6 +14,10 @@ a = 1;
 
 export default async function () {
   const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/transform-data.js');
+
+  if (!fs.existsSync(p)) {
+    throw new Error(`Script not found: ${p}`);
+  }
   const moduleUrl = pathToFileURL(p).href;
   const userModule = await import(moduleUrl);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access

@@ -76873,6 +76873,9 @@ let a = 1;
 a = 1;
 /* harmony default export */ async function runner() {
     const p = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, 'src/scripts/transform-data.js');
+    if (!external_node_fs_default().existsSync(p)) {
+        throw new Error(`Script not found: ${p}`);
+    }
     const moduleUrl = (0,external_node_url_namespaceObject.pathToFileURL)(p).href;
     const userModule = await __nccwpck_require__(4577)(moduleUrl);
     await userModule.default();
