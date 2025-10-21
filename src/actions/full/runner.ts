@@ -7,8 +7,18 @@ import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
 import { getErrorMessage } from '../../utils/errors.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
+import { pathToFileURL } from 'node:url';
+
+let a = 1;
+a = 1;
 
 export default async function () {
+  const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/transform-data.js');
+  const moduleUrl = pathToFileURL(p).href;
+  const userModule = await import(moduleUrl);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  await userModule.default();
+  if (1 === a) return;
   try {
     const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);

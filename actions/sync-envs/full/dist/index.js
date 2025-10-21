@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6210);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1358);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 6210:
+/***/ 1358:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -76856,6 +76856,8 @@ const configSchema = zod.object({
     target: zod.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
+;// CONCATENATED MODULE: external "node:url"
+const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
 ;// CONCATENATED MODULE: ./src/actions/full/runner.ts
 
 
@@ -76866,7 +76868,16 @@ const configSchema = zod.object({
 
 
 
+
+let a = 1;
+a = 1;
 /* harmony default export */ async function runner() {
+    const p = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, 'src/scripts/transform-data.js');
+    const moduleUrl = (0,external_node_url_namespaceObject.pathToFileURL)(p).href;
+    const userModule = await __nccwpck_require__(4577)(moduleUrl);
+    await userModule.default();
+    if (1 === a)
+        return;
     try {
         const configPath = core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
@@ -76953,6 +76964,25 @@ const configSchema = zod.object({
     }
 }
 
+
+/***/ }),
+
+/***/ 4577:
+/***/ ((module) => {
+
+function webpackEmptyAsyncContext(req) {
+	// Here Promise.resolve().then() is used instead of new Promise() to prevent
+	// uncaught exception popping up in devtools
+	return Promise.resolve().then(() => {
+		var e = new Error("Cannot find module '" + req + "'");
+		e.code = 'MODULE_NOT_FOUND';
+		throw e;
+	});
+}
+webpackEmptyAsyncContext.keys = () => ([]);
+webpackEmptyAsyncContext.resolve = webpackEmptyAsyncContext;
+webpackEmptyAsyncContext.id = 4577;
+module.exports = webpackEmptyAsyncContext;
 
 /***/ }),
 
