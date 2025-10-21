@@ -76809,7 +76809,7 @@ const SOURCE_DATA_FILE_PATH = 'source-data-file-path';
             throw new Error('Somehow, sourceData is null');
         }
         lib_core.info('WRITTING TO: ' + external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH));
-        external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData));
+        external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData), 'utf-8');
         if (config.target.type === 's3') {
             lib_core.setOutput('s3-info', JSON.stringify({
                 Metadata: s3SourcedMetadata,

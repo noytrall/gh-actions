@@ -58,7 +58,11 @@ export default async function () {
       throw new Error('Somehow, sourceData is null');
     }
     core.info('WRITTING TO: ' + path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH));
-    fs.writeFileSync(path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData));
+    fs.writeFileSync(
+      path.resolve(process.env.GITHUB_WORKSPACE!, SOURCE_DATA_FILE_PATH),
+      JSON.stringify(sourceData),
+      'utf-8',
+    );
 
     if (config.target.type === 's3') {
       core.setOutput(
