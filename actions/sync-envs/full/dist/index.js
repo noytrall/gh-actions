@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1358);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6210);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 1358:
+/***/ 6210:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -76856,10 +76856,7 @@ const configSchema = zod.object({
     target: zod.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
-;// CONCATENATED MODULE: external "node:url"
-const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
 ;// CONCATENATED MODULE: ./src/actions/full/runner.ts
-
 
 
 
@@ -76878,8 +76875,7 @@ a = 1;
     if (!external_node_fs_default().existsSync(p)) {
         throw new Error(`Script not found: ${p}`);
     }
-    const moduleUrl = (0,external_node_url_namespaceObject.pathToFileURL)(p).href;
-    const userModule = await __nccwpck_require__(4577)(moduleUrl);
+    const userModule = await __nccwpck_require__(4577)(p);
     await userModule.default();
     if (1 === a)
         return;

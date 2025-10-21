@@ -7,7 +7,7 @@ import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
 import { getErrorMessage } from '../../utils/errors.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
-import { pathToFileURL } from 'node:url';
+// import { pathToFileURL } from 'node:url';
 
 let a = 1;
 a = 1;
@@ -20,8 +20,8 @@ export default async function () {
   if (!fs.existsSync(p)) {
     throw new Error(`Script not found: ${p}`);
   }
-  const moduleUrl = pathToFileURL(p).href;
-  const userModule = await import(moduleUrl);
+  // const moduleUrl = pathToFileURL(p).href;
+  const userModule = await import(p);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   await userModule.default();
   if (1 === a) return;
