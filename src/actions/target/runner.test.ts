@@ -87,7 +87,7 @@ describe('target', () => {
 
     expect(readFileSync).toHaveBeenNthCalledWith(1, expect.stringContaining('config.json'), 'utf8');
     expect(readFileSync).toHaveBeenNthCalledWith(2, expect.stringContaining(SOURCE_DATA_FILE_PATH), 'utf8');
-    expect(readFileSync).toHaveBeenNthCalledWith(3, expect.stringContaining(S3_INFO_FILE_PATH), 'utf8');
+
     expect(targetDynamoMock).not.toHaveBeenCalled();
     expect(targetS3Mock).toHaveBeenCalledExactlyOnceWith(sourceData, targetAwsConfig, {
       Metadata: undefined,
@@ -96,6 +96,25 @@ describe('target', () => {
       Key: 'key',
     });
     expect(setFailed).not.toHaveBeenCalled();
+  });
+
+  it("should read s3 info file when target and source are 's3'", async () => {
+    const s3Info = { Metadata: undefined, ContentType: undefined };
+    coreGetInputMock.mockImplementation((name: string) => {
+      if (name === 'config-path') return 'config.json';
+      throw new Error('unexpected input ' + name);
+    });
+
+    const config: Config = {
+      source: { type: 's3', s3Config: { Bucket: 'bucket', Key: 'key' } },
+      target: { type: 's3', s3Config: { Bucket: 'bucket', Key: 'key' } },
+    };
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(config));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(sourceData));
+    readFileSyncMock.mockReturnValueOnce(JSON.stringify(s3Info));
+    await runner();
+
+    expect(readFileSync).toHaveBeenNthCalledWith(3, expect.stringContaining(S3_INFO_FILE_PATH), 'utf8');
   });
 
   it('should throw an error when config is invalid', async () => {

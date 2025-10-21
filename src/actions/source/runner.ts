@@ -21,8 +21,6 @@ export default async function () {
     }
 
     let sourceData: SourceData = null;
-    let s3SourcedMetadata: Record<string, string> | undefined = undefined;
-    let s3SourcedContentType: string | undefined;
 
     const sourceType = config.source.type;
 
@@ -49,8 +47,17 @@ export default async function () {
 
       if (!response.Body) throw new Error('No Body attribute in response');
       sourceData = await response.Body.transformToByteArray();
-      s3SourcedContentType = response.ContentType;
-      s3SourcedMetadata = response.Metadata;
+
+      if (config.target.type === 's3') {
+        fs.writeFileSync(
+          path.resolve(process.env.GITHUB_WORKSPACE!, S3_INFO_FILE_PATH),
+          JSON.stringify({
+            Metadata: response.ContentType,
+            ContentType: response.Metadata,
+          }),
+          'utf-8',
+        );
+      }
     }
 
     if (!sourceData) {
@@ -63,17 +70,6 @@ export default async function () {
       JSON.stringify(sourceData),
       'utf-8',
     );
-
-    if (config.target.type === 's3') {
-      fs.writeFileSync(
-        path.resolve(process.env.GITHUB_WORKSPACE!, S3_INFO_FILE_PATH),
-        JSON.stringify({
-          Metadata: s3SourcedMetadata,
-          ContentType: s3SourcedContentType,
-        }),
-        'utf-8',
-      );
-    }
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }

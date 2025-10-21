@@ -76847,19 +76847,19 @@ const S3_INFO_FILE_PATH = 'source-data-file-path';
             });
         }
         else if (targetType === 's3') {
-            const s3InfoPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, S3_INFO_FILE_PATH);
-            core.info('READING S3 FROM: ' + s3InfoPath);
-            const s3Info = JSON.parse(external_node_fs_default().readFileSync(s3InfoPath, 'utf8'));
-            let { ContentType: s3SourcedContentType } = s3Info;
-            const { Metadata: s3SourcedMetadata } = s3Info;
             const { target: { s3Config }, } = config;
-            if (sourceType === 'dynamo')
-                s3SourcedContentType = 'application/json';
-            await targetS3(data, targetAwsConfig, {
-                Metadata: s3SourcedMetadata,
-                ContentType: s3SourcedContentType,
+            let targetS3Config = {
                 ...s3Config,
-            });
+            };
+            if (sourceType === 's3') {
+                const s3InfoPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, S3_INFO_FILE_PATH);
+                core.info('READING S3 FROM: ' + s3InfoPath);
+                const s3Info = JSON.parse(external_node_fs_default().readFileSync(s3InfoPath, 'utf8'));
+                targetS3Config = { ...targetS3Config, ...s3Info };
+            }
+            if (sourceType === 'dynamo')
+                targetS3Config.ContentType = 'application/json';
+            await targetS3(data, targetAwsConfig, targetS3Config);
         }
     }
     catch (error) {

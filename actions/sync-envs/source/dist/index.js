@@ -76782,8 +76782,6 @@ const S3_INFO_FILE_PATH = 'source-data-file-path';
             throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
         let sourceData = null;
-        let s3SourcedMetadata = undefined;
-        let s3SourcedContentType;
         const sourceType = config.source.type;
         const sourceAwsConfig = {
             region: process.env.AWS_REGION,
@@ -76803,20 +76801,18 @@ const S3_INFO_FILE_PATH = 'source-data-file-path';
             if (!response.Body)
                 throw new Error('No Body attribute in response');
             sourceData = await response.Body.transformToByteArray();
-            s3SourcedContentType = response.ContentType;
-            s3SourcedMetadata = response.Metadata;
+            if (config.target.type === 's3') {
+                external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, S3_INFO_FILE_PATH), JSON.stringify({
+                    Metadata: response.ContentType,
+                    ContentType: response.Metadata,
+                }), 'utf-8');
+            }
         }
         if (!sourceData) {
             throw new Error('Somehow, sourceData is null');
         }
         lib_core.info('WRITTING TO: ' + external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH));
         external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, SOURCE_DATA_FILE_PATH), JSON.stringify(sourceData), 'utf-8');
-        if (config.target.type === 's3') {
-            external_node_fs_default().writeFileSync(external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, S3_INFO_FILE_PATH), JSON.stringify({
-                Metadata: s3SourcedMetadata,
-                ContentType: s3SourcedContentType,
-            }), 'utf-8');
-        }
     }
     catch (error) {
         lib_core.setFailed(errors_getErrorMessage(error));

@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getErrorMessage } from '../../utils/errors.js';
-import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
+import { configSchema, TargetS3Parameters, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
 import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
 import { S3_INFO_FILE_PATH, SOURCE_DATA_FILE_PATH } from '../../utils/files.js';
@@ -43,23 +43,23 @@ export default async function () {
       });
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (targetType === 's3') {
-      const s3InfoPath = path.resolve(process.env.GITHUB_WORKSPACE!, S3_INFO_FILE_PATH);
-      core.info('READING S3 FROM: ' + s3InfoPath);
-      const s3Info = JSON.parse(fs.readFileSync(s3InfoPath, 'utf8'));
-      let { ContentType: s3SourcedContentType } = s3Info;
-      const { Metadata: s3SourcedMetadata } = s3Info;
-
       const {
         target: { s3Config },
       } = config;
 
-      if (sourceType === 'dynamo') s3SourcedContentType = 'application/json';
-
-      await targetS3(data, targetAwsConfig, {
-        Metadata: s3SourcedMetadata,
-        ContentType: s3SourcedContentType,
+      let targetS3Config: TargetS3Parameters['s3Config'] = {
         ...s3Config,
-      });
+      };
+      if (sourceType === 's3') {
+        const s3InfoPath = path.resolve(process.env.GITHUB_WORKSPACE!, S3_INFO_FILE_PATH);
+        core.info('READING S3 FROM: ' + s3InfoPath);
+        const s3Info = JSON.parse(fs.readFileSync(s3InfoPath, 'utf8'));
+        targetS3Config = { ...targetS3Config, ...s3Info };
+      }
+
+      if (sourceType === 'dynamo') targetS3Config.ContentType = 'application/json';
+
+      await targetS3(data, targetAwsConfig, targetS3Config);
     }
   } catch (error) {
     core.setFailed(getErrorMessage(error));
