@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6210);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(477);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 6210:
+/***/ 477:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -64016,6 +64016,9 @@ var core = __nccwpck_require__(7484);
 // EXTERNAL MODULE: external "node:fs"
 var external_node_fs_ = __nccwpck_require__(3024);
 var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_);
+;// CONCATENATED MODULE: external "vm"
+const external_vm_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("vm");
+var external_vm_default = /*#__PURE__*/__nccwpck_require__.n(external_vm_namespaceObject);
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
@@ -76866,19 +76869,38 @@ const configSchema = zod.object({
 
 
 
-let a = 1;
-a = 1;
+
 /* harmony default export */ async function runner() {
     console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE);
     console.log('process.cwd()', process.cwd());
-    const p = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, 'src/scripts/gh-actions/transform-data.js');
-    if (!external_node_fs_default().existsSync(p)) {
-        throw new Error(`Script not found: ${p}`);
+    const scriptPath = core.getInput('script-path');
+    if (scriptPath) {
+        const scriptResolvedPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, scriptPath);
+        const code = external_node_fs_default().readFileSync(scriptResolvedPath, 'utf8');
+        const sandbox = {
+            module: {},
+            exports: {},
+            fetch,
+            console,
+        };
+        external_vm_default().createContext(sandbox);
+        external_vm_default().runInContext(code, sandbox, { filename: scriptResolvedPath });
+        const fn = sandbox.module.exports.default ??
+            sandbox.module.exports.run ??
+            sandbox.exports.default ??
+            sandbox.exports.run;
+        if (typeof fn === 'function') {
+            const result = await fn('INDEX');
+            console.log('result :>> ', result);
+        }
+        else {
+            console.log('ruh-roh');
+        }
+        const p = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, 'src/scripts/gh-actions/transform-data.js');
+        if (!external_node_fs_default().existsSync(p)) {
+            throw new Error(`Script not found: ${p}`);
+        }
     }
-    const userModule = await __nccwpck_require__(4577)(p);
-    await userModule.default();
-    if (1 === a)
-        return;
     try {
         const configPath = core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
@@ -76965,25 +76987,6 @@ a = 1;
     }
 }
 
-
-/***/ }),
-
-/***/ 4577:
-/***/ ((module) => {
-
-function webpackEmptyAsyncContext(req) {
-	// Here Promise.resolve().then() is used instead of new Promise() to prevent
-	// uncaught exception popping up in devtools
-	return Promise.resolve().then(() => {
-		var e = new Error("Cannot find module '" + req + "'");
-		e.code = 'MODULE_NOT_FOUND';
-		throw e;
-	});
-}
-webpackEmptyAsyncContext.keys = () => ([]);
-webpackEmptyAsyncContext.resolve = webpackEmptyAsyncContext;
-webpackEmptyAsyncContext.id = 4577;
-module.exports = webpackEmptyAsyncContext;
 
 /***/ }),
 

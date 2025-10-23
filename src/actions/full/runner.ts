@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import fs from 'node:fs';
+import vm from 'vm';
 import path from 'node:path';
 import { sourceDynamo } from '../../source-dynamo.js';
 import { sourceS3 } from '../../source-s3.js';
@@ -7,24 +8,54 @@ import { targetDynamo } from '../../target-dynamo.js';
 import { targetS3 } from '../../target-s3.js';
 import { getErrorMessage } from '../../utils/errors.js';
 import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
-// import { pathToFileURL } from 'node:url';
-
-let a = 1;
-a = 1;
 
 export default async function () {
   console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE!);
   console.log('process.cwd()', process.cwd());
-  const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/gh-actions/transform-data.js');
+  const scriptPath = core.getInput('script-path');
 
-  if (!fs.existsSync(p)) {
-    throw new Error(`Script not found: ${p}`);
+  if (scriptPath) {
+    const scriptResolvedPath = path.resolve(process.env.GITHUB_WORKSPACE!, scriptPath);
+
+    const code = fs.readFileSync(scriptResolvedPath, 'utf8');
+    // Create a sandbox environment for the script
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sandbox: Record<string, any> = {
+      module: {},
+      exports: {},
+      fetch,
+      console,
+    };
+
+    vm.createContext(sandbox);
+    vm.runInContext(code, sandbox, { filename: scriptResolvedPath });
+
+    // Find exported function
+    const fn =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.module.exports.default ??
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.module.exports.run ??
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.exports.default ??
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.exports.run;
+
+    if (typeof fn === 'function') {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      const result = await fn('INDEX');
+      console.log('result :>> ', result);
+    } else {
+      console.log('ruh-roh');
+    }
+
+    const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/gh-actions/transform-data.js');
+
+    if (!fs.existsSync(p)) {
+      throw new Error(`Script not found: ${p}`);
+    }
   }
-  // const moduleUrl = pathToFileURL(p).href;
-  const userModule = await import(p);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-  await userModule.default();
-  if (1 === a) return;
+
   try {
     const configPath = core.getInput('config-path', { required: true });
     const fullPath = path.resolve(process.env.GITHUB_WORKSPACE!, configPath);
