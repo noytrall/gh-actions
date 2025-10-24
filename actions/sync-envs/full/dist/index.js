@@ -64016,12 +64016,12 @@ var core = __nccwpck_require__(7484);
 // EXTERNAL MODULE: external "node:fs"
 var external_node_fs_ = __nccwpck_require__(3024);
 var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_fs_);
-;// CONCATENATED MODULE: external "vm"
-const external_vm_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("vm");
-var external_vm_default = /*#__PURE__*/__nccwpck_require__.n(external_vm_namespaceObject);
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: external "vm"
+const external_vm_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("vm");
+var external_vm_default = /*#__PURE__*/__nccwpck_require__.n(external_vm_namespaceObject);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/client-dynamodb/dist-cjs/index.js
 var dist_cjs = __nccwpck_require__(4305);
 // EXTERNAL MODULE: ./node_modules/@aws-sdk/lib-dynamodb/dist-cjs/index.js
@@ -76936,8 +76936,10 @@ const configSchema = zod.object({
         if (!sourceData) {
             throw new Error('Somehow, sourceData is null');
         }
-        if (transformerFunction)
+        console.log('transformerFunction', transformerFunction);
+        if (transformerFunction) {
             sourceData = transformerFunction(sourceData);
+        }
         if (targetType === 'dynamo') {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
             await targetDynamo(sourceData, targetAwsConfig, {

@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import fs from 'node:fs';
-import vm from 'vm';
 import path from 'node:path';
+import vm from 'vm';
 import { sourceDynamo } from '../../source-dynamo.js';
 import { sourceS3 } from '../../source-s3.js';
 import { targetDynamo } from '../../target-dynamo.js';
@@ -104,8 +104,11 @@ export default async function () {
       throw new Error('Somehow, sourceData is null');
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    if (transformerFunction) sourceData = transformerFunction(sourceData);
+    console.log('transformerFunction', transformerFunction);
+    if (transformerFunction) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      sourceData = transformerFunction(sourceData);
+    }
 
     if (targetType === 'dynamo') {
       const {
