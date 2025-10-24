@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import fs from 'node:fs';
 import path from 'node:path';
-import { isUint8Array } from 'node:util/types';
 import vm from 'vm';
 import { sourceDynamo } from '../../source-dynamo.js';
 import { sourceS3 } from '../../source-s3.js';
@@ -102,27 +101,19 @@ export default async function () {
       sourceData = await response.Body.transformToByteArray();
       s3SourcedContentType = response.ContentType;
       s3SourcedMetadata = response.Metadata;
+
+      if (transformerFunction) {
+        console.log('TRANSFORMING');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
+        sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)));
+      } else {
+        console.log('NO TRANSFORMER');
+      }
     }
 
     if (!sourceData) {
       // TODO: Handle this
       throw new Error('Somehow, sourceData is null');
-    }
-
-    console.log('transformerFunction', transformerFunction);
-    if (transformerFunction) {
-      console.log('TRANSFORMING');
-      if (isUint8Array(sourceData)) {
-        console.log('TRANSFORMING Uint8Array');
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
-        sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)));
-      } else {
-        console.log('DYNAMO');
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        sourceData = transformerFunction(sourceData);
-      }
-    } else {
-      console.log('NO TRANSFORMER');
     }
 
     if (targetType === 'dynamo') {

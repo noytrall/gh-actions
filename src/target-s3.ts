@@ -14,6 +14,7 @@ export async function targetS3(
     let data = sourceData;
 
     if (isArrayOfRecords(data)) {
+      console.log('targetS3.isArrayOfRecords');
       const encoder = new TextEncoder();
       data = encoder.encode(JSON.stringify(data));
     }

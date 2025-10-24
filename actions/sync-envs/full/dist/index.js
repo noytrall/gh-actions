@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5173);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(477);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 5173:
+/***/ 477:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -64019,8 +64019,6 @@ var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
-;// CONCATENATED MODULE: external "node:util/types"
-const types_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:util/types");
 ;// CONCATENATED MODULE: external "vm"
 const external_vm_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("vm");
 var external_vm_default = /*#__PURE__*/__nccwpck_require__.n(external_vm_namespaceObject);
@@ -64312,6 +64310,7 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
     try {
         let data = sourceData;
         if (isArrayOfRecords(data)) {
+            console.log('targetS3.isArrayOfRecords');
             const encoder = new TextEncoder();
             data = encoder.encode(JSON.stringify(data));
         }
@@ -76891,7 +76890,6 @@ const configSchema = zod.object({
 
 
 
-
 /* harmony default export */ async function runner() {
     console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE);
     console.log('process.cwd()', process.cwd());
@@ -76954,24 +76952,16 @@ const configSchema = zod.object({
             sourceData = await response.Body.transformToByteArray();
             s3SourcedContentType = response.ContentType;
             s3SourcedMetadata = response.Metadata;
-        }
-        if (!sourceData) {
-            throw new Error('Somehow, sourceData is null');
-        }
-        console.log('transformerFunction', transformerFunction);
-        if (transformerFunction) {
-            console.log('TRANSFORMING');
-            if ((0,types_namespaceObject.isUint8Array)(sourceData)) {
-                console.log('TRANSFORMING Uint8Array');
+            if (transformerFunction) {
+                console.log('TRANSFORMING');
                 sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)));
             }
             else {
-                console.log('DYNAMO');
-                sourceData = transformerFunction(sourceData);
+                console.log('NO TRANSFORMER');
             }
         }
-        else {
-            console.log('NO TRANSFORMER');
+        if (!sourceData) {
+            throw new Error('Somehow, sourceData is null');
         }
         if (targetType === 'dynamo') {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert }, } = config;
