@@ -20,12 +20,12 @@ export const scanTable = async (
   }: {
     attributes?: string[];
     maxNumberOfRecords?: number;
-    transformerFunction?: (data: DynamoData) => { data: DynamoData };
+    transformerFunction?: (data: DynamoData, isFinalChunk?: boolean) => { data: DynamoData };
   } = {},
 ) => {
   try {
-    const dataHandler: (data: DynamoData) => { data: DynamoData } = transformerFunction
-      ? (data) => transformerFunction(data)
+    const dataHandler: (data: DynamoData, isFinalChunk?: boolean) => { data: DynamoData } = transformerFunction
+      ? (data, isFinalChunk) => transformerFunction(data, isFinalChunk)
       : (data) => ({ data });
 
     core.info('Scanning: ' + tableName);
@@ -59,7 +59,7 @@ export const scanTable = async (
 
       if (!result.Items) throw new Error('Something has gone terribly wrong');
 
-      data.push(...dataHandler(result.Items).data);
+      data.push(...dataHandler(result.Items, result.LastEvaluatedKey === undefined).data);
 
       if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
         return data.slice(0, maxNumberOfRecords);

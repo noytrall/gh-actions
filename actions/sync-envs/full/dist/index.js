@@ -64067,7 +64067,7 @@ function getErrorMessage(e) {
 const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, transformerFunction, } = {}) => {
     try {
         const dataHandler = transformerFunction
-            ? (data) => transformerFunction(data)
+            ? (data, isFinalChunk) => transformerFunction(data, isFinalChunk)
             : (data) => ({ data });
         core.info('Scanning: ' + tableName);
         let exclusiveLastKey = undefined;
@@ -64094,7 +64094,7 @@ const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, tr
             const result = await client.send(scanCommand);
             if (!result.Items)
                 throw new Error('Something has gone terribly wrong');
-            data.push(...dataHandler(result.Items).data);
+            data.push(...dataHandler(result.Items, result.LastEvaluatedKey === undefined).data);
             if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
                 return data.slice(0, maxNumberOfRecords);
             exclusiveLastKey = result.LastEvaluatedKey;
