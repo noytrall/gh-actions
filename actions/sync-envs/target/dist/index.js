@@ -76791,6 +76791,7 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
             const encoder = new TextEncoder();
             data = encoder.encode(JSON.stringify(data));
         }
+        console.log('DATA', data);
         if (isUint8ArrayStringifiedAndParsed(data)) {
             core.info('IS Uint8Array Stringified and Parsed');
             data = new Uint8Array(Object.values(data));
