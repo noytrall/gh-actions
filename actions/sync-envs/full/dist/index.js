@@ -76873,34 +76873,7 @@ const configSchema = zod.object({
 /* harmony default export */ async function runner() {
     console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE);
     console.log('process.cwd()', process.cwd());
-    const scriptPath = core.getInput('script-path');
-    if (scriptPath) {
-        const scriptResolvedPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, scriptPath);
-        const code = external_node_fs_default().readFileSync(scriptResolvedPath, 'utf8');
-        const sandbox = {
-            module: {},
-            exports: {},
-            fetch,
-            console,
-        };
-        external_vm_default().createContext(sandbox);
-        external_vm_default().runInContext(code, sandbox, { filename: scriptResolvedPath });
-        const fn = sandbox.module.exports.default ??
-            sandbox.module.exports.run ??
-            sandbox.exports.default ??
-            sandbox.exports.run;
-        if (typeof fn === 'function') {
-            const result = await fn('INDEX');
-            console.log('result :>> ', result);
-        }
-        else {
-            console.log('ruh-roh');
-        }
-        const p = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, 'src/scripts/gh-actions/transform-data.js');
-        if (!external_node_fs_default().existsSync(p)) {
-            throw new Error(`Script not found: ${p}`);
-        }
-    }
+    const transformerFunction = getTransformerScript();
     try {
         const configPath = core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
@@ -76963,6 +76936,8 @@ const configSchema = zod.object({
         if (!sourceData) {
             throw new Error('Somehow, sourceData is null');
         }
+        if (transformerFunction)
+            sourceData = transformerFunction(sourceData);
         if (targetType === 'dynamo') {
             const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
             await targetDynamo(sourceData, targetAwsConfig, {
@@ -76985,6 +76960,30 @@ const configSchema = zod.object({
     catch (error) {
         core.setFailed(getErrorMessage(error));
     }
+}
+function getTransformerScript() {
+    const scriptPath = core.getInput('script-path');
+    if (scriptPath) {
+        const scriptResolvedPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, scriptPath);
+        if (!external_node_fs_default().existsSync(scriptResolvedPath)) {
+            throw new Error(`Script not found: ${scriptResolvedPath}`);
+        }
+        const code = external_node_fs_default().readFileSync(scriptResolvedPath, 'utf8');
+        const sandbox = {
+            module: {},
+            exports: {},
+            fetch,
+            console,
+        };
+        external_vm_default().createContext(sandbox);
+        external_vm_default().runInContext(code, sandbox, { filename: scriptResolvedPath });
+        const fn = sandbox.module.exports.default ??
+            sandbox.module.exports.run ??
+            sandbox.exports.default ??
+            sandbox.exports.run;
+        return fn;
+    }
+    return undefined;
 }
 
 

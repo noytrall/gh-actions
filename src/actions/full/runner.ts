@@ -12,49 +12,8 @@ import { configSchema, type AWSConfig, type Config, type SourceData } from '../.
 export default async function () {
   console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE!);
   console.log('process.cwd()', process.cwd());
-  const scriptPath = core.getInput('script-path');
 
-  if (scriptPath) {
-    const scriptResolvedPath = path.resolve(process.env.GITHUB_WORKSPACE!, scriptPath);
-
-    const code = fs.readFileSync(scriptResolvedPath, 'utf8');
-    // Create a sandbox environment for the script
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sandbox: Record<string, any> = {
-      module: {},
-      exports: {},
-      fetch,
-      console,
-    };
-
-    vm.createContext(sandbox);
-    vm.runInContext(code, sandbox, { filename: scriptResolvedPath });
-
-    // Find exported function
-    const fn =
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      sandbox.module.exports.default ??
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      sandbox.module.exports.run ??
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      sandbox.exports.default ??
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      sandbox.exports.run;
-
-    if (typeof fn === 'function') {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      const result = await fn('INDEX');
-      console.log('result :>> ', result);
-    } else {
-      console.log('ruh-roh');
-    }
-
-    const p = path.resolve(process.env.GITHUB_WORKSPACE!, 'src/scripts/gh-actions/transform-data.js');
-
-    if (!fs.existsSync(p)) {
-      throw new Error(`Script not found: ${p}`);
-    }
-  }
+  const transformerFunction = getTransformerScript();
 
   try {
     const configPath = core.getInput('config-path', { required: true });
@@ -145,6 +104,9 @@ export default async function () {
       throw new Error('Somehow, sourceData is null');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    if (transformerFunction) sourceData = transformerFunction(sourceData);
+
     if (targetType === 'dynamo') {
       const {
         target: { dynamoTableName, purgeTable, tablePrimaryKey },
@@ -171,4 +133,44 @@ export default async function () {
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }
+}
+
+function getTransformerScript() {
+  const scriptPath = core.getInput('script-path');
+
+  if (scriptPath) {
+    const scriptResolvedPath = path.resolve(process.env.GITHUB_WORKSPACE!, scriptPath);
+
+    if (!fs.existsSync(scriptResolvedPath)) {
+      throw new Error(`Script not found: ${scriptResolvedPath}`);
+    }
+
+    const code = fs.readFileSync(scriptResolvedPath, 'utf8');
+    // Create a sandbox environment for the script
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sandbox: Record<string, any> = {
+      module: {},
+      exports: {},
+      fetch,
+      console,
+    };
+
+    vm.createContext(sandbox);
+    vm.runInContext(code, sandbox, { filename: scriptResolvedPath });
+
+    // Find exported function
+    const fn =
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.module.exports.default ??
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.module.exports.run ??
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.exports.default ??
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      sandbox.exports.run;
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return fn;
+  }
+  return undefined;
 }
