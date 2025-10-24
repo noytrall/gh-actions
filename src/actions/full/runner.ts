@@ -104,8 +104,8 @@ export default async function () {
 
       if (transformerFunction) {
         console.log('TRANSFORMING');
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
-        sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)));
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)).data);
       } else {
         console.log('NO TRANSFORMER');
       }

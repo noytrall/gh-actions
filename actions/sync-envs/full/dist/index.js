@@ -76954,7 +76954,7 @@ const configSchema = zod.object({
             s3SourcedMetadata = response.Metadata;
             if (transformerFunction) {
                 console.log('TRANSFORMING');
-                sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)));
+                sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)).data);
             }
             else {
                 console.log('NO TRANSFORMER');
