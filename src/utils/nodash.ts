@@ -1,3 +1,5 @@
+import { isUint8Array } from 'node:util/types';
+
 export const chunk = <T>(array: T[], length: number): T[][] => {
   const chunks: T[][] = [];
 
@@ -15,7 +17,7 @@ export const isArray = <T = unknown>(value: unknown): value is T[] => Array.isAr
 export const isObject = (value: unknown): value is object => value !== null && typeof value === 'object';
 
 export const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !isArray(value);
+  value !== null && typeof value === 'object' && !isArray(value) && !isUint8Array(value);
 
 export const isArrayOfRecords = (value: unknown): value is Record<string, unknown>[] => {
   return isArray(value) && value.every(isRecord);

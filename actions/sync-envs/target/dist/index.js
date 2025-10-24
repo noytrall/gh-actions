@@ -63286,7 +63286,7 @@ module.exports = {
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(776);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(1282);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -63295,7 +63295,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 776:
+/***/ 1282:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -64019,7 +64019,10 @@ var external_node_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_node_
 ;// CONCATENATED MODULE: external "node:path"
 const external_node_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:path");
 var external_node_path_default = /*#__PURE__*/__nccwpck_require__.n(external_node_path_namespaceObject);
+;// CONCATENATED MODULE: external "node:util/types"
+const types_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:util/types");
 ;// CONCATENATED MODULE: ./src/utils/nodash.ts
+
 const chunk = (array, length) => {
     const chunks = [];
     for (let i = 0; i < array.length; i += length)
@@ -64030,7 +64033,7 @@ const isString = (value) => typeof value === 'string';
 const isNumber = (value) => typeof value === 'number';
 const isArray = (value) => Array.isArray(value);
 const isObject = (value) => value !== null && typeof value === 'object';
-const isRecord = (value) => value !== null && typeof value === 'object' && !isArray(value);
+const isRecord = (value) => value !== null && typeof value === 'object' && !isArray(value) && !(0,types_namespaceObject.isUint8Array)(value);
 const isArrayOfRecords = (value) => {
     return isArray(value) && value.every(isRecord);
 };
