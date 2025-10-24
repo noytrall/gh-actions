@@ -64286,15 +64286,15 @@ async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, 
         const client = lib_dynamodb_dist_cjs/* DynamoDBDocumentClient */.TG.from(dynamodbClient, {
             marshallOptions: { removeUndefinedValues: true },
         });
+        const slicedData = data.slice(0, maxNumberOfRecordsToInsert);
         if (purgeTable) {
             core.info('Purging Table: ' + dynamoTableName);
             const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName, tablePrimaryKey);
             core.info('definedPrimaryKey: ' + JSON.stringify(definedPrimaryKey, null, 2));
-            await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
+            await doPurgeTable(client, dynamoTableName, definedPrimaryKey, slicedData);
         }
-        console.log('MAX NUMBER OF RECORDS', maxNumberOfRecordsToInsert, data.slice(0, maxNumberOfRecordsToInsert).length);
         core.info('Populating table: ' + dynamoTableName);
-        await populateTable(client, dynamoTableName, data.slice(0, maxNumberOfRecordsToInsert));
+        await populateTable(client, dynamoTableName, slicedData);
     }
     catch (error) {
         core.error('target-dynamo: ' + getErrorMessage(error));
