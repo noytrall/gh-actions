@@ -76987,9 +76987,6 @@ function getTransformerScript() {
             exports: {},
             fetch,
             console,
-            TextEncoder,
-            TextDecoder,
-            json: JSON,
         };
         external_vm_default().createContext(sandbox);
         external_vm_default().runInContext(code, sandbox, { filename: scriptResolvedPath });
