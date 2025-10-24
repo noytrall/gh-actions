@@ -165,8 +165,8 @@ function getTransformerScript() {
       exports: {},
       fetch,
       console,
-      // textEncoder: TextEncoder,
-      // textDecoder: TextDecoder,
+      TextEncoder: TextEncoder,
+      TextDecoder: TextDecoder,
       // json: JSON,
     };
 
