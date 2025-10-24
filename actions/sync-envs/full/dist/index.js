@@ -64250,6 +64250,7 @@ var types_ = __nccwpck_require__(8253);
 async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert }) {
     let data = sourceData;
     try {
+        console.log('DATA', data);
         if (isUint8ArrayStringifiedAndParsed(data)) {
             core.info('IS Uint8Array Stringified and Parsed');
             data = new Uint8Array(Object.values(data));
@@ -64309,7 +64310,6 @@ async function targetS3(sourceData, { accessKeyId, region, secretAccessKey, sess
             const encoder = new TextEncoder();
             data = encoder.encode(JSON.stringify(data));
         }
-        console.log('DATA', data);
         if (isUint8ArrayStringifiedAndParsed(data)) {
             core.info('IS Uint8Array Stringified and Parsed');
             data = new Uint8Array(Object.values(data));

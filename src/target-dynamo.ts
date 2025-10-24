@@ -14,6 +14,7 @@ export async function targetDynamo(
 ) {
   let data = sourceData;
   try {
+    console.log('DATA', data);
     if (isUint8ArrayStringifiedAndParsed(data)) {
       core.info('IS Uint8Array Stringified and Parsed');
       data = new Uint8Array(Object.values(data));
