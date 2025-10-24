@@ -33,11 +33,15 @@ export default async function () {
 
     if (sourceType === 'dynamo') {
       const {
-        source: { dynamoTableName },
+        source: { dynamoTableName, maxNumberOfRecords },
       } = config;
-      sourceData = await sourceDynamo(sourceAwsConfig, {
-        dynamoTableName,
-      });
+      sourceData = await sourceDynamo(
+        sourceAwsConfig,
+        {
+          dynamoTableName,
+        },
+        { maxNumberOfRecords },
+      );
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (sourceType === 's3') {
       const {

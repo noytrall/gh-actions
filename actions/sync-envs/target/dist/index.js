@@ -76556,6 +76556,9 @@ const baseDynamoParametersSchema = zod.object({
 const baseS3ParametersSchema = zod.object({
     type: zod.literal('s3'),
 });
+const sourceDynamoParametersSchema = baseDynamoParametersSchema.extend({
+    maxNumberOfRecords: zod.number().optional(),
+});
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
     s3Config: zod.looseObject({
         Bucket: zod.string(),
@@ -76575,9 +76578,10 @@ const dynamoTablePrimaryKeySchema = zod.object({
 const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
     purgeTable: zod.boolean().optional(),
     tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
+    maxNumberOfRecordsToInsert: zod.number().optional(),
 });
 const configSchema = zod.object({
-    source: zod.discriminatedUnion('type', [baseDynamoParametersSchema, sourceS3ParametersSchema]),
+    source: zod.discriminatedUnion('type', [sourceDynamoParametersSchema, sourceS3ParametersSchema]),
     target: zod.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
@@ -76593,8 +76597,11 @@ var types_ = __nccwpck_require__(8253);
 
 
 
-const scanTable = async (client, tableName, attributes) => {
+const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, transformerFunction, } = {}) => {
     try {
+        const dataHandler = transformerFunction
+            ? (data) => transformerFunction(data)
+            : (data) => data;
         core.info('Scanning: ' + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
@@ -76618,7 +76625,9 @@ const scanTable = async (client, tableName, attributes) => {
             const result = await client.send(scanCommand);
             if (!result.Items)
                 throw new Error('Something has gone terribly wrong');
-            data.push(...result.Items);
+            data.push(...dataHandler(result.Items));
+            if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
+                return data.slice(0, maxNumberOfRecords);
             exclusiveLastKey = result.LastEvaluatedKey;
         } while (exclusiveLastKey);
         return data;
@@ -76653,7 +76662,9 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
 };
 const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-    const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
+    const scanResult = await scanTable(client, dynamoTableName, {
+        attributes: [tablePK, tableSK].filter(Boolean),
+    });
     const deletable = tableSK
         ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
         : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
@@ -76714,7 +76725,7 @@ const populateTable = async (client, dynamoTableName, data) => {
 
 
 
-async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey }) {
+async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert }) {
     let data = sourceData;
     try {
         if (isUint8ArrayStringifiedAndParsed(data)) {
@@ -76753,7 +76764,7 @@ async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, 
             await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
         }
         core.info('Populating table: ' + dynamoTableName);
-        await populateTable(client, dynamoTableName, data);
+        await populateTable(client, dynamoTableName, data.slice(0, maxNumberOfRecordsToInsert));
     }
     catch (error) {
         core.error('target-dynamo: ' + getErrorMessage(error));

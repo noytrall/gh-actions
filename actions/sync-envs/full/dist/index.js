@@ -64063,8 +64063,11 @@ function getErrorMessage(e) {
 
 
 
-const scanTable = async (client, tableName, attributes) => {
+const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, transformerFunction, } = {}) => {
     try {
+        const dataHandler = transformerFunction
+            ? (data) => transformerFunction(data)
+            : (data) => data;
         core.info('Scanning: ' + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
@@ -64088,7 +64091,9 @@ const scanTable = async (client, tableName, attributes) => {
             const result = await client.send(scanCommand);
             if (!result.Items)
                 throw new Error('Something has gone terribly wrong');
-            data.push(...result.Items);
+            data.push(...dataHandler(result.Items));
+            if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
+                return data.slice(0, maxNumberOfRecords);
             exclusiveLastKey = result.LastEvaluatedKey;
         } while (exclusiveLastKey);
         return data;
@@ -64123,7 +64128,9 @@ const getTablePrimaryKey = async (client, dynamoTableName, tablePrimaryKey) => {
 };
 const doPurgeTable = async (client, dynamoTableName, tablePrimaryKey, data) => {
     const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-    const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean));
+    const scanResult = await scanTable(client, dynamoTableName, {
+        attributes: [tablePK, tableSK].filter(Boolean),
+    });
     const deletable = tableSK
         ? (record) => data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
         : (record) => data.every((e) => !(e[tablePK] === record[tablePK]));
@@ -64182,7 +64189,7 @@ const populateTable = async (client, dynamoTableName, data) => {
 
 
 
-async function sourceDynamo({ accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName }) {
+async function sourceDynamo({ accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName }, { transformerFunction, maxNumberOfRecords, } = {}) {
     try {
         const dynamodbClient = new dist_cjs.DynamoDBClient({
             region,
@@ -64195,7 +64202,7 @@ async function sourceDynamo({ accessKeyId, region, secretAccessKey, sessionToken
         const client = lib_dynamodb_dist_cjs/* DynamoDBDocumentClient */.TG.from(dynamodbClient, {
             marshallOptions: { removeUndefinedValues: true },
         });
-        const result = await scanTable(client, dynamoTableName);
+        const result = await scanTable(client, dynamoTableName, { transformerFunction, maxNumberOfRecords });
         return result;
     }
     catch (error) {
@@ -64240,7 +64247,7 @@ var types_ = __nccwpck_require__(8253);
 
 
 
-async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey }) {
+async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, sessionToken }, { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert }) {
     let data = sourceData;
     try {
         if (isUint8ArrayStringifiedAndParsed(data)) {
@@ -64279,7 +64286,7 @@ async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, 
             await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
         }
         core.info('Populating table: ' + dynamoTableName);
-        await populateTable(client, dynamoTableName, data);
+        await populateTable(client, dynamoTableName, data.slice(0, maxNumberOfRecordsToInsert));
     }
     catch (error) {
         core.error('target-dynamo: ' + getErrorMessage(error));
@@ -76836,6 +76843,9 @@ const baseDynamoParametersSchema = zod.object({
 const baseS3ParametersSchema = zod.object({
     type: zod.literal('s3'),
 });
+const sourceDynamoParametersSchema = baseDynamoParametersSchema.extend({
+    maxNumberOfRecords: zod.number().optional(),
+});
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
     s3Config: zod.looseObject({
         Bucket: zod.string(),
@@ -76855,9 +76865,10 @@ const dynamoTablePrimaryKeySchema = zod.object({
 const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
     purgeTable: zod.boolean().optional(),
     tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
+    maxNumberOfRecordsToInsert: zod.number().optional(),
 });
 const configSchema = zod.object({
-    source: zod.discriminatedUnion('type', [baseDynamoParametersSchema, sourceS3ParametersSchema]),
+    source: zod.discriminatedUnion('type', [sourceDynamoParametersSchema, sourceS3ParametersSchema]),
     target: zod.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 
@@ -76922,10 +76933,10 @@ const configSchema = zod.object({
             sessionToken: targetAwsSessionToken,
         };
         if (sourceType === 'dynamo') {
-            const { source: { dynamoTableName }, } = config;
+            const { source: { dynamoTableName, maxNumberOfRecords }, } = config;
             sourceData = await sourceDynamo(sourceAwsConfig, {
                 dynamoTableName,
-            });
+            }, { transformerFunction, maxNumberOfRecords });
         }
         else if (sourceType === 's3') {
             const { source: { s3Config }, } = config;
@@ -76951,12 +76962,16 @@ const configSchema = zod.object({
                 sourceData = transformerFunction(sourceData);
             }
         }
+        else {
+            console.log('NO TRANSFORMER');
+        }
         if (targetType === 'dynamo') {
-            const { target: { dynamoTableName, purgeTable, tablePrimaryKey }, } = config;
+            const { target: { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert }, } = config;
             await targetDynamo(sourceData, targetAwsConfig, {
                 dynamoTableName,
                 purgeTable,
                 tablePrimaryKey,
+                maxNumberOfRecordsToInsert,
             });
         }
         else if (targetType === 's3') {

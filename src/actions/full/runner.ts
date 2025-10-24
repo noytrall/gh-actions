@@ -127,12 +127,13 @@ export default async function () {
 
     if (targetType === 'dynamo') {
       const {
-        target: { dynamoTableName, purgeTable, tablePrimaryKey },
+        target: { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert },
       } = config;
       await targetDynamo(sourceData, targetAwsConfig, {
         dynamoTableName,
         purgeTable,
         tablePrimaryKey,
+        maxNumberOfRecordsToInsert,
       });
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (targetType === 's3') {

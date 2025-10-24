@@ -10,7 +10,7 @@ import type { AWSConfig, SourceData, TargetDynamoParameters } from './utils/type
 export async function targetDynamo(
   sourceData: SourceData,
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
-  { dynamoTableName, purgeTable, tablePrimaryKey }: Omit<TargetDynamoParameters, 'type'>,
+  { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert }: Omit<TargetDynamoParameters, 'type'>,
 ) {
   let data = sourceData;
   try {
@@ -55,7 +55,7 @@ export async function targetDynamo(
     }
 
     core.info('Populating table: ' + dynamoTableName);
-    await populateTable(client, dynamoTableName, data);
+    await populateTable(client, dynamoTableName, data.slice(0, maxNumberOfRecordsToInsert));
   } catch (error) {
     core.error('target-dynamo: ' + getErrorMessage(error));
     throw error;
