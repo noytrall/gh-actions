@@ -76743,6 +76743,7 @@ async function targetDynamo(sourceData, { accessKeyId, region, secretAccessKey, 
             try {
                 const decoder = new TextDecoder();
                 const jsonString = decoder.decode(data);
+                console.log('jsonString :>> ', jsonString);
                 data = JSON.parse(jsonString);
             }
             catch (error) {
