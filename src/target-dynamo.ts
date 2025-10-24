@@ -54,6 +54,7 @@ export async function targetDynamo(
       await doPurgeTable(client, dynamoTableName, definedPrimaryKey, data);
     }
 
+    console.log('MAX NUMBER OF RECORDS', maxNumberOfRecordsToInsert, data.slice(0, maxNumberOfRecordsToInsert).length);
     core.info('Populating table: ' + dynamoTableName);
     await populateTable(client, dynamoTableName, data.slice(0, maxNumberOfRecordsToInsert));
   } catch (error) {
