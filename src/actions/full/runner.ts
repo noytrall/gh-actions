@@ -82,11 +82,15 @@ export default async function () {
 
     if (sourceType === 'dynamo') {
       const {
-        source: { dynamoTableName },
+        source: { dynamoTableName, maxNumberOfRecords },
       } = config;
-      sourceData = await sourceDynamo(sourceAwsConfig, {
-        dynamoTableName,
-      });
+      sourceData = await sourceDynamo(
+        sourceAwsConfig,
+        {
+          dynamoTableName,
+        },
+        { transformerFunction, maxNumberOfRecords },
+      );
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (sourceType === 's3') {
       const {
@@ -117,6 +121,8 @@ export default async function () {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         sourceData = transformerFunction(sourceData);
       }
+    } else {
+      console.log('NO TRANSFORMER');
     }
 
     if (targetType === 'dynamo') {
@@ -167,7 +173,6 @@ function getTransformerScript() {
       console,
       TextEncoder: TextEncoder,
       TextDecoder: TextDecoder,
-      // json: JSON,
     };
 
     vm.createContext(sandbox);

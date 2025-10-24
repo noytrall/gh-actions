@@ -11,6 +11,11 @@ const baseS3ParametersSchema = z.object({
   type: z.literal('s3'),
 });
 
+const sourceDynamoParametersSchema = baseDynamoParametersSchema.extend({
+  maxNumberOfRecords: z.number().optional(),
+});
+export type SourceDynamoParameters = z.infer<typeof sourceDynamoParametersSchema>;
+
 const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
   s3Config: z.looseObject({
     Bucket: z.string(),
@@ -20,6 +25,7 @@ const sourceS3ParametersSchema = baseS3ParametersSchema.extend({
 export type SourceS3Parameters = z.infer<typeof sourceS3ParametersSchema> & {
   s3Config: GetObjectCommandInput;
 };
+
 const targetS3ParametersSchema = baseS3ParametersSchema.extend({
   s3Config: z.looseObject({
     Bucket: z.string(),
@@ -39,12 +45,12 @@ export type DynamoTablePrimaryKey = z.infer<typeof dynamoTablePrimaryKeySchema>;
 const targetDynamoParametersSchema = baseDynamoParametersSchema.extend({
   purgeTable: z.boolean().optional(),
   tablePrimaryKey: dynamoTablePrimaryKeySchema.optional(),
+  maxNumberOfRecordsToInsert: z.number().optional(),
 });
-
 export type TargetDynamoParameters = z.infer<typeof targetDynamoParametersSchema>;
 
 export const configSchema = z.object({
-  source: z.discriminatedUnion('type', [baseDynamoParametersSchema, sourceS3ParametersSchema]),
+  source: z.discriminatedUnion('type', [sourceDynamoParametersSchema, sourceS3ParametersSchema]),
   target: z.discriminatedUnion('type', [targetDynamoParametersSchema, targetS3ParametersSchema]),
 });
 

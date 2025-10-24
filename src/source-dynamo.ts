@@ -3,11 +3,15 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { scanTable } from './utils/dynamo.js';
 import { getErrorMessage } from './utils/errors.js';
-import type { AWSConfig, BaseDynamoParameters } from './utils/types.js';
+import type { AWSConfig, BaseDynamoParameters, DynamoData } from './utils/types.js';
 
 export async function sourceDynamo(
   { accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig,
   { dynamoTableName }: Omit<BaseDynamoParameters, 'type'>,
+  {
+    transformerFunction,
+    maxNumberOfRecords,
+  }: { transformerFunction?: (data: DynamoData) => DynamoData; maxNumberOfRecords?: number },
 ) {
   try {
     const dynamodbClient = new DynamoDBClient({
@@ -21,7 +25,7 @@ export async function sourceDynamo(
     const client = DynamoDBDocumentClient.from(dynamodbClient, {
       marshallOptions: { removeUndefinedValues: true },
     });
-    const result = await scanTable(client, dynamoTableName);
+    const result = await scanTable(client, dynamoTableName, { transformerFunction, maxNumberOfRecords });
     return result;
   } catch (error) {
     core.error('source-dynamo: ' + getErrorMessage(error));

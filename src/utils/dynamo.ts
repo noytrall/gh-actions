@@ -10,8 +10,24 @@ import type { DynamoData, DynamoTablePrimaryKey, TargetDynamoParameters } from '
 import { DescribeTableCommand } from '@aws-sdk/client-dynamodb';
 import { chunk } from './nodash.js';
 
-export const scanTable = async (client: DynamoDBDocumentClient, tableName: string, attributes?: string[]) => {
+export const scanTable = async (
+  client: DynamoDBDocumentClient,
+  tableName: string,
+  {
+    attributes,
+    maxNumberOfRecords,
+    transformerFunction,
+  }: {
+    attributes?: string[];
+    maxNumberOfRecords?: number;
+    transformerFunction?: (data: DynamoData) => DynamoData;
+  } = {},
+) => {
   try {
+    const dataHandler: (data: DynamoData) => DynamoData = transformerFunction
+      ? (data) => transformerFunction(data)
+      : (data) => data;
+
     core.info('Scanning: ' + tableName);
     let exclusiveLastKey: Record<string, string> | undefined = undefined;
 
@@ -41,7 +57,10 @@ export const scanTable = async (client: DynamoDBDocumentClient, tableName: strin
 
       if (!result.Items) throw new Error('Something has gone terribly wrong');
 
-      data.push(...result.Items);
+      data.push(...dataHandler(result.Items));
+
+      if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
+        return data.slice(0, maxNumberOfRecords);
 
       exclusiveLastKey = result.LastEvaluatedKey;
     } while (exclusiveLastKey);
@@ -90,7 +109,9 @@ export const doPurgeTable = async (
   data: DynamoData,
 ) => {
   const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-  const scanResult = await scanTable(client, dynamoTableName, [tablePK, tableSK].filter(Boolean) as string[]);
+  const scanResult = await scanTable(client, dynamoTableName, {
+    attributes: [tablePK, tableSK].filter(Boolean) as string[],
+  });
 
   const deletable = tableSK
     ? (record: DynamoData[number]) =>
