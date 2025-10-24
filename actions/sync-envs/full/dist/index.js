@@ -76989,7 +76989,7 @@ function getTransformerScript() {
             console,
             TextEncoder,
             TextDecoder,
-            JSON,
+            json: JSON,
         };
         external_vm_default().createContext(sandbox);
         external_vm_default().runInContext(code, sandbox, { filename: scriptResolvedPath });

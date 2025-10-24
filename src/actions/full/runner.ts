@@ -167,7 +167,7 @@ function getTransformerScript() {
       console,
       TextEncoder,
       TextDecoder,
-      JSON,
+      json: JSON,
     };
 
     vm.createContext(sandbox);
