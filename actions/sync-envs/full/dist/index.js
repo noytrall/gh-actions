@@ -64071,7 +64071,9 @@ const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, tr
         core.info('Scanning: ' + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
-        const attributesInput = {};
+        const attributesInput = {
+            Limit: maxNumberOfRecords,
+        };
         if (attributes?.length) {
             attributesInput.ExpressionAttributeNames = {};
             attributesInput.ProjectionExpression = attributes
@@ -64082,19 +64084,24 @@ const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, tr
                 .join(', ');
         }
         do {
+            console.log('scanTable.DO');
             const input = {
                 TableName: tableName,
                 ExclusiveStartKey: exclusiveLastKey,
                 ...attributesInput,
             };
             const scanCommand = new lib_dynamodb_dist_cjs/* ScanCommand */.Zy(input);
+            console.log('scanTable.SEND');
             const result = await client.send(scanCommand);
             if (!result.Items)
                 throw new Error('Something has gone terribly wrong');
+            console.log('scanTable.RESULT', JSON.stringify(result, null, 2));
             data.push(...dataHandler(result.Items));
+            console.log('scanTable.PUSH');
             if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
                 return data.slice(0, maxNumberOfRecords);
             exclusiveLastKey = result.LastEvaluatedKey;
+            console.log('scanTable.EXCLUSIVE-LAST-KEY', exclusiveLastKey);
         } while (exclusiveLastKey);
         return data;
     }

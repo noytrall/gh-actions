@@ -1,4 +1,5 @@
 import * as core from '@actions/core';
+import { DescribeTableCommand } from '@aws-sdk/client-dynamodb';
 import {
   BatchWriteCommand,
   type DynamoDBDocumentClient,
@@ -6,9 +7,8 @@ import {
   type ScanCommandInput,
 } from '@aws-sdk/lib-dynamodb';
 import { getErrorMessage } from './errors.js';
-import type { DynamoData, DynamoTablePrimaryKey, TargetDynamoParameters } from './types.js';
-import { DescribeTableCommand } from '@aws-sdk/client-dynamodb';
 import { chunk } from './nodash.js';
+import type { DynamoData, DynamoTablePrimaryKey, TargetDynamoParameters } from './types.js';
 
 export const scanTable = async (
   client: DynamoDBDocumentClient,
@@ -33,7 +33,9 @@ export const scanTable = async (
 
     const data: DynamoData = [];
 
-    const attributesInput: Pick<ScanCommandInput, 'ProjectionExpression' | 'ExpressionAttributeNames'> = {};
+    const attributesInput: Pick<ScanCommandInput, 'ProjectionExpression' | 'ExpressionAttributeNames' | 'Limit'> = {
+      Limit: maxNumberOfRecords,
+    };
 
     if (attributes?.length) {
       attributesInput.ExpressionAttributeNames = {};
@@ -46,6 +48,7 @@ export const scanTable = async (
     }
 
     do {
+      console.log('scanTable.DO');
       const input: ScanCommandInput = {
         TableName: tableName,
         ExclusiveStartKey: exclusiveLastKey,
@@ -53,16 +56,20 @@ export const scanTable = async (
       };
       const scanCommand = new ScanCommand(input);
 
+      console.log('scanTable.SEND');
       const result = await client.send(scanCommand);
 
       if (!result.Items) throw new Error('Something has gone terribly wrong');
+      console.log('scanTable.RESULT', JSON.stringify(result, null, 2));
 
       data.push(...dataHandler(result.Items));
 
+      console.log('scanTable.PUSH');
       if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
         return data.slice(0, maxNumberOfRecords);
 
       exclusiveLastKey = result.LastEvaluatedKey;
+      console.log('scanTable.EXCLUSIVE-LAST-KEY', exclusiveLastKey);
     } while (exclusiveLastKey);
 
     return data;
