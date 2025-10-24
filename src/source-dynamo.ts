@@ -11,7 +11,7 @@ export async function sourceDynamo(
   {
     transformerFunction,
     maxNumberOfRecords,
-  }: { transformerFunction?: (data: DynamoData) => DynamoData; maxNumberOfRecords?: number } = {},
+  }: { transformerFunction?: (data: DynamoData) => { data: DynamoData }; maxNumberOfRecords?: number } = {},
 ) {
   try {
     const dynamodbClient = new DynamoDBClient({

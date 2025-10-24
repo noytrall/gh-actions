@@ -20,13 +20,13 @@ export const scanTable = async (
   }: {
     attributes?: string[];
     maxNumberOfRecords?: number;
-    transformerFunction?: (data: DynamoData) => DynamoData;
+    transformerFunction?: (data: DynamoData) => { data: DynamoData };
   } = {},
 ) => {
   try {
-    const dataHandler: (data: DynamoData) => DynamoData = transformerFunction
+    const dataHandler: (data: DynamoData) => { data: DynamoData } = transformerFunction
       ? (data) => transformerFunction(data)
-      : (data) => data;
+      : (data) => ({ data });
 
     core.info('Scanning: ' + tableName);
     let exclusiveLastKey: Record<string, string> | undefined = undefined;
@@ -59,7 +59,7 @@ export const scanTable = async (
 
       if (!result.Items) throw new Error('Something has gone terribly wrong');
 
-      data.push(...dataHandler(result.Items));
+      data.push(...dataHandler(result.Items).data);
 
       if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
         return data.slice(0, maxNumberOfRecords);

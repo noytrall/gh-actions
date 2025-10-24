@@ -64062,7 +64062,7 @@ const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, tr
     try {
         const dataHandler = transformerFunction
             ? (data) => transformerFunction(data)
-            : (data) => data;
+            : (data) => ({ data });
         lib_core.info('Scanning: ' + tableName);
         let exclusiveLastKey = undefined;
         const data = [];
@@ -64088,7 +64088,7 @@ const scanTable = async (client, tableName, { attributes, maxNumberOfRecords, tr
             const result = await client.send(scanCommand);
             if (!result.Items)
                 throw new Error('Something has gone terribly wrong');
-            data.push(...dataHandler(result.Items));
+            data.push(...dataHandler(result.Items).data);
             if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
                 return data.slice(0, maxNumberOfRecords);
             exclusiveLastKey = result.LastEvaluatedKey;
