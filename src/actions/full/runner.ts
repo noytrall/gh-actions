@@ -91,12 +91,13 @@ export default async function () {
         transformedData = transformedData.slice(0, maxNumberOfItems);
         maxNumberOfItems -= transformedData.length;
       }
-      console.log('AFTER transformedData.length :>> ', transformedData.length);
+      console.log('AFTER transformedData.length :>> ', transformedData.length, maxNumberOfItems);
 
       await populateTable(targetDynamodbClient, config.target.dynamoTableName, transformedData);
 
       if (maxNumberOfItems !== undefined && maxNumberOfItems <= 0) break;
     }
+    console.log('EOA');
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }
