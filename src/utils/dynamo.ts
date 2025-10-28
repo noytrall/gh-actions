@@ -91,3 +91,35 @@ export const populateTable = async (
     }
   }
 };
+
+export async function doPurgeTable(client: DynamoDBDocumentClient, dynamoTableName: string) {
+  const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName);
+  const { pk: tablePK, sk: tableSK } = definedPrimaryKey;
+
+  for await (const items of scanTableIterator(client, dynamoTableName)) {
+    const batches = chunk(items, 25);
+
+    for (const [, batch] of batches.entries()) {
+      try {
+        const command = new BatchWriteCommand({
+          RequestItems: {
+            [dynamoTableName]: batch.map((item) => ({
+              DeleteRequest: {
+                Key: {
+                  [tablePK]: item[tablePK],
+                  ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                },
+              },
+            })),
+          },
+        });
+        // TODO: handle UnprocessedItems
+        await client.send(command);
+      } catch (error) {
+        const message = getErrorMessage(error);
+        core.error('Failed purge of target table: ' + message);
+        throw error;
+      }
+    }
+  }
+}

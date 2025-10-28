@@ -1,12 +1,11 @@
 import * as core from '@actions/core';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { BatchWriteCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'vm';
-import { getTablePrimaryKey, populateTable, scanTableIterator } from '../../utils/dynamo.js';
+import { doPurgeTable, populateTable, scanTableIterator } from '../../utils/dynamo.js';
 import { getErrorMessage } from '../../utils/errors.js';
-import { chunk } from '../../utils/nodash.js';
 import { configSchema, type AWSConfig, type Config } from '../../utils/types.js';
 
 export default async function () {
@@ -81,7 +80,6 @@ export default async function () {
     let maxNumberOfItems = config.maxNumberOfItems;
 
     for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       let transformedData = transformerFunction?.(items) ?? items;
 
       if (maxNumberOfItems !== undefined) {
@@ -95,38 +93,6 @@ export default async function () {
     }
   } catch (error) {
     core.setFailed(getErrorMessage(error));
-  }
-}
-
-async function doPurgeTable(client: DynamoDBDocumentClient, dynamoTableName: string) {
-  const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName);
-  const { pk: tablePK, sk: tableSK } = definedPrimaryKey;
-
-  for await (const items of scanTableIterator(client, dynamoTableName)) {
-    const batches = chunk(items, 25);
-
-    for (const [, batch] of batches.entries()) {
-      try {
-        const command = new BatchWriteCommand({
-          RequestItems: {
-            [dynamoTableName]: batch.map((item) => ({
-              DeleteRequest: {
-                Key: {
-                  [tablePK]: item[tablePK],
-                  ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
-                },
-              },
-            })),
-          },
-        });
-        // TODO: handle UnprocessedItems
-        await client.send(command);
-      } catch (error) {
-        const message = getErrorMessage(error);
-        core.error('Failed purge of target table: ' + message);
-        throw error;
-      }
-    }
   }
 }
 

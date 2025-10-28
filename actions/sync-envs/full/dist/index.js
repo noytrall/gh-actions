@@ -48741,6 +48741,35 @@ const populateTable = async (client, dynamoTableName, data) => {
         }
     }
 };
+async function doPurgeTable(client, dynamoTableName) {
+    const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName);
+    const { pk: tablePK, sk: tableSK } = definedPrimaryKey;
+    for await (const items of scanTableIterator(client, dynamoTableName)) {
+        const batches = chunk(items, 25);
+        for (const [, batch] of batches.entries()) {
+            try {
+                const command = new lib_dynamodb_dist_cjs/* BatchWriteCommand */.Zp({
+                    RequestItems: {
+                        [dynamoTableName]: batch.map((item) => ({
+                            DeleteRequest: {
+                                Key: {
+                                    [tablePK]: item[tablePK],
+                                    ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                                },
+                            },
+                        })),
+                    },
+                });
+                await client.send(command);
+            }
+            catch (error) {
+                const message = getErrorMessage(error);
+                core.error('Failed purge of target table: ' + message);
+                throw error;
+            }
+        }
+    }
+}
 
 ;// CONCATENATED MODULE: ./node_modules/zod/v4/core/core.js
 /** A special constant with type `never` */
@@ -61264,7 +61293,6 @@ const configSchema = zod.object({
 
 
 
-
 /* harmony default export */ async function runner() {
     console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE);
     console.log('process.cwd()', process.cwd());
@@ -61327,35 +61355,6 @@ const configSchema = zod.object({
     }
     catch (error) {
         core.setFailed(getErrorMessage(error));
-    }
-}
-async function doPurgeTable(client, dynamoTableName) {
-    const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName);
-    const { pk: tablePK, sk: tableSK } = definedPrimaryKey;
-    for await (const items of scanTableIterator(client, dynamoTableName)) {
-        const batches = chunk(items, 25);
-        for (const [, batch] of batches.entries()) {
-            try {
-                const command = new lib_dynamodb_dist_cjs/* BatchWriteCommand */.Zp({
-                    RequestItems: {
-                        [dynamoTableName]: batch.map((item) => ({
-                            DeleteRequest: {
-                                Key: {
-                                    [tablePK]: item[tablePK],
-                                    ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
-                                },
-                            },
-                        })),
-                    },
-                });
-                await client.send(command);
-            }
-            catch (error) {
-                const message = getErrorMessage(error);
-                core.error('Failed purge of target table: ' + message);
-                throw error;
-            }
-        }
     }
 }
 const createDynamoDocumentClient = ({ accessKeyId, region, secretAccessKey, sessionToken }) => {
