@@ -25,8 +25,9 @@ export async function* scanTableIterator(
       };
       const command = new ScanCommand(input);
 
+      console.log('input :>> ', JSON.stringify(input, null, 2));
       const result = await client.send(command);
-
+      console.log('RESULT SUCESS');
       yield result.Items ?? [];
 
       lastKey = result.LastEvaluatedKey;
