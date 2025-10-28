@@ -6,9 +6,7 @@
   "scripts": {
     "build": "tsc",
     "package:full": "ncc build src/actions/full/action.ts -o actions/sync-envs/full/dist",
-    "package:source": "ncc build src/actions/source/action.ts -o actions/sync-envs/source/dist",
-    "package:target": "ncc build src/actions/target/action.ts -o actions/sync-envs/target/dist",
-    "package": "npm run package:source && npm run package:target && npm run package:full",
+    "package": "npm run package:full",
     "test": "vitest",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage"

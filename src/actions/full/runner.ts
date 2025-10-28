@@ -1,19 +1,17 @@
 import * as core from '@actions/core';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { BatchWriteCommand, DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'vm';
-import { sourceDynamo } from '../../source-dynamo.js';
-import { sourceS3 } from '../../source-s3.js';
-import { targetDynamo } from '../../target-dynamo.js';
-import { targetS3 } from '../../target-s3.js';
+import { getTablePrimaryKey, populateTable, scanTableIterator } from '../../utils/dynamo.js';
 import { getErrorMessage } from '../../utils/errors.js';
-import { configSchema, type AWSConfig, type Config, type SourceData } from '../../utils/types.js';
+import { chunk } from '../../utils/nodash.js';
+import { configSchema, type AWSConfig, type Config } from '../../utils/types.js';
 
 export default async function () {
   console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE!);
   console.log('process.cwd()', process.cwd());
-
-  const transformerFunction = getTransformerScript();
 
   try {
     const configPath = core.getInput('config-path', { required: true });
@@ -22,6 +20,10 @@ export default async function () {
     const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
     const result = configSchema.safeParse(config);
+    if (result.error) {
+      core.error('parseResult: ' + JSON.stringify(result, null, 2));
+      throw new Error(JSON.stringify(result.error.issues, null, 2));
+    }
 
     const [
       sourceAwsRegion,
@@ -54,17 +56,17 @@ export default async function () {
     core.setSecret(targetAwsSecretAccessKey);
     core.setSecret(targetAwsSessionToken);
 
-    if (result.error) {
-      core.error('parseResult: ' + JSON.stringify(result, null, 2));
-      throw new Error(JSON.stringify(result.error.issues, null, 2));
+    const targetAwsConfig: AWSConfig = {
+      region: targetAwsRegion,
+      accessKeyId: targetAwsAccessKeyId,
+      secretAccessKey: targetAwsSecretAccessKey,
+      sessionToken: targetAwsSessionToken,
+    };
+    const targetDynamodbClient = createDynamoDocumentClient(targetAwsConfig);
+
+    if (config.target.purgeTable) {
+      await doPurgeTable(targetDynamodbClient, config.target.dynamoTableName);
     }
-
-    let sourceData: SourceData = null;
-    let s3SourcedMetadata: Record<string, string> | undefined = undefined;
-    let s3SourcedContentType: string | undefined;
-
-    const sourceType = config.source.type;
-    const targetType = config.target.type;
 
     const sourceAwsConfig: AWSConfig = {
       region: sourceAwsRegion,
@@ -72,78 +74,77 @@ export default async function () {
       secretAccessKey: sourceAwsSecretAccessKey,
       sessionToken: sourceAwsSessionToken,
     };
-    const targetAwsConfig: AWSConfig = {
-      region: targetAwsRegion,
-      accessKeyId: targetAwsAccessKeyId,
-      secretAccessKey: targetAwsSecretAccessKey,
-      sessionToken: targetAwsSessionToken,
-    };
+    const sourceDynamodbClient = createDynamoDocumentClient(sourceAwsConfig);
 
-    if (sourceType === 'dynamo') {
-      const {
-        source: { dynamoTableName, maxNumberOfRecords },
-      } = config;
-      sourceData = await sourceDynamo(
-        sourceAwsConfig,
-        {
-          dynamoTableName,
-        },
-        { transformerFunction, maxNumberOfRecords },
-      );
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    } else if (sourceType === 's3') {
-      const {
-        source: { s3Config },
-      } = config;
-      const response = await sourceS3(sourceAwsConfig, s3Config);
+    const transformerFunction = getTransformerScript();
 
-      if (!response.Body) throw new Error('No Body attribute in response');
-      sourceData = await response.Body.transformToByteArray();
-      s3SourcedContentType = response.ContentType;
-      s3SourcedMetadata = response.Metadata;
+    let maxNumberOfItems = config.maxNumberOfItems;
 
-      if (transformerFunction) {
-        console.log('TRANSFORMING');
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        sourceData = new TextEncoder().encode(transformerFunction(new TextDecoder().decode(sourceData)).data);
-      } else {
-        console.log('NO TRANSFORMER');
+    for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      let transformedData = transformerFunction?.(items) ?? items;
+
+      if (maxNumberOfItems !== undefined) {
+        transformedData = transformedData.slice(0, maxNumberOfItems);
+        maxNumberOfItems -= transformedData.length;
       }
-    }
 
-    if (!sourceData) {
-      // TODO: Handle this
-      throw new Error('Somehow, sourceData is null');
-    }
+      await populateTable(targetDynamodbClient, config.target.dynamoTableName, transformedData);
 
-    if (targetType === 'dynamo') {
-      const {
-        target: { dynamoTableName, purgeTable, tablePrimaryKey, maxNumberOfRecordsToInsert },
-      } = config;
-      await targetDynamo(sourceData, targetAwsConfig, {
-        dynamoTableName,
-        purgeTable,
-        tablePrimaryKey,
-        maxNumberOfRecordsToInsert,
-      });
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    } else if (targetType === 's3') {
-      const {
-        target: { s3Config },
-      } = config;
-
-      if (sourceType === 'dynamo') s3SourcedContentType = 'application/json';
-
-      await targetS3(sourceData, targetAwsConfig, {
-        Metadata: s3SourcedMetadata,
-        ContentType: s3SourcedContentType,
-        ...s3Config,
-      });
+      if (maxNumberOfItems !== undefined && maxNumberOfItems <= 0) break;
     }
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }
 }
+
+async function doPurgeTable(client: DynamoDBDocumentClient, dynamoTableName: string) {
+  const definedPrimaryKey = await getTablePrimaryKey(client, dynamoTableName);
+  const { pk: tablePK, sk: tableSK } = definedPrimaryKey;
+
+  for await (const items of scanTableIterator(client, dynamoTableName)) {
+    const batches = chunk(items, 25);
+
+    for (const [, batch] of batches.entries()) {
+      try {
+        const command = new BatchWriteCommand({
+          RequestItems: {
+            [dynamoTableName]: batch.map((item) => ({
+              DeleteRequest: {
+                Key: {
+                  [tablePK]: item[tablePK],
+                  ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
+                },
+              },
+            })),
+          },
+        });
+        // TODO: handle UnprocessedItems
+        await client.send(command);
+      } catch (error) {
+        const message = getErrorMessage(error);
+        core.error('Failed purge of target table: ' + message);
+        throw error;
+      }
+    }
+  }
+}
+
+const createDynamoDocumentClient = ({ accessKeyId, region, secretAccessKey, sessionToken }: AWSConfig) => {
+  return DynamoDBDocumentClient.from(
+    new DynamoDBClient({
+      region,
+      credentials: {
+        accessKeyId,
+        secretAccessKey,
+        sessionToken,
+      },
+    }),
+    {
+      marshallOptions: { removeUndefinedValues: true },
+    },
+  );
+};
 
 function getTransformerScript() {
   const scriptPath = core.getInput('script-path');
@@ -182,7 +183,7 @@ function getTransformerScript() {
       sandbox.exports.run;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return fn;
+    return fn as (data: Record<string, unknown>[]) => Record<string, unknown>[];
   }
   return undefined;
 }

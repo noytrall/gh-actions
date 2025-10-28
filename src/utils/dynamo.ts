@@ -8,79 +8,40 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import { getErrorMessage } from './errors.js';
 import { chunk } from './nodash.js';
-import type { DynamoData, DynamoTablePrimaryKey, TargetDynamoParameters } from './types.js';
 
-export const scanTable = async (
+export async function* scanTableIterator(
   client: DynamoDBDocumentClient,
   tableName: string,
-  {
-    attributes,
-    maxNumberOfRecords,
-    transformerFunction,
-  }: {
-    attributes?: string[];
-    maxNumberOfRecords?: number;
-    transformerFunction?: (data: DynamoData, isFinalChunk?: boolean) => { data: DynamoData };
-  } = {},
-) => {
+  inputProps?: Omit<ScanCommandInput, 'TableName' | 'ExclusiveStartKey'>,
+) {
+  let lastKey: Record<string, string> | undefined = undefined;
+
   try {
-    const dataHandler: (data: DynamoData, isFinalChunk?: boolean) => { data: DynamoData } = transformerFunction
-      ? (data, isFinalChunk) => transformerFunction(data, isFinalChunk)
-      : (data) => ({ data });
-
-    core.info('Scanning: ' + tableName);
-    let exclusiveLastKey: Record<string, string> | undefined = undefined;
-
-    const data: DynamoData = [];
-
-    const attributesInput: Pick<ScanCommandInput, 'ProjectionExpression' | 'ExpressionAttributeNames' | 'Limit'> = {
-      Limit: maxNumberOfRecords,
-    };
-
-    if (attributes?.length) {
-      attributesInput.ExpressionAttributeNames = {};
-      attributesInput.ProjectionExpression = attributes
-        .map((attr, i) => {
-          attributesInput.ExpressionAttributeNames![`#attr${i}`] = attr;
-          return `#attr${i}`;
-        })
-        .join(', ');
-    }
-
     do {
       const input: ScanCommandInput = {
         TableName: tableName,
-        ExclusiveStartKey: exclusiveLastKey,
-        ...attributesInput,
+        ExclusiveStartKey: lastKey,
+        ...inputProps,
       };
-      const scanCommand = new ScanCommand(input);
+      const command = new ScanCommand(input);
 
-      const result = await client.send(scanCommand);
+      const result = await client.send(command);
 
-      if (!result.Items) throw new Error('Something has gone terribly wrong');
+      yield result.Items ?? [];
 
-      data.push(...dataHandler(result.Items, result.LastEvaluatedKey === undefined).data);
-
-      if (maxNumberOfRecords !== undefined && data.length >= maxNumberOfRecords)
-        return data.slice(0, maxNumberOfRecords);
-
-      exclusiveLastKey = result.LastEvaluatedKey;
-    } while (exclusiveLastKey);
-
-    return data;
+      lastKey = result.LastEvaluatedKey;
+    } while (lastKey);
+    return;
   } catch (error) {
-    core.error('scanTable: ' + getErrorMessage(error));
+    core.error('scanTableIterator: ' + getErrorMessage(error));
     throw error;
   }
-};
+}
 
 export const getTablePrimaryKey = async (
   client: DynamoDBDocumentClient,
   dynamoTableName: string,
-  tablePrimaryKey?: TargetDynamoParameters['tablePrimaryKey'],
-): Promise<DynamoTablePrimaryKey> => {
-  if (tablePrimaryKey) return tablePrimaryKey;
-
+): Promise<{ pk: string; sk: string | undefined }> => {
   core.info('Running DescribeTableCommand on table: ' + dynamoTableName);
   const describeCommand = new DescribeTableCommand({
     TableName: dynamoTableName,
@@ -99,60 +60,16 @@ export const getTablePrimaryKey = async (
 
     return { pk: tablePK, sk: tableSK };
   } catch (err) {
-    core.error('Error in DescribeTableCommand. ' + getErrorMessage(err));
+    core.error('getTablePrimaryKey. ' + getErrorMessage(err));
     throw err;
   }
 };
 
-export const doPurgeTable = async (
+export const populateTable = async (
   client: DynamoDBDocumentClient,
   dynamoTableName: string,
-  tablePrimaryKey: DynamoTablePrimaryKey,
-  data: DynamoData,
+  data: Record<string, unknown>[],
 ) => {
-  const { pk: tablePK, sk: tableSK } = tablePrimaryKey;
-  const scanResult = await scanTable(client, dynamoTableName, {
-    attributes: [tablePK, tableSK].filter(Boolean) as string[],
-  });
-
-  const deletable = tableSK
-    ? (record: DynamoData[number]) =>
-        data.every((e) => !(e[tablePK] === record[tablePK] && e[tableSK] === record[tableSK]))
-    : (record: DynamoData[number]) => data.every((e) => !(e[tablePK] === record[tablePK]));
-
-  // only delete items that do not exist in data (PutRequest will overwrite these, no need to delete)
-  const toDelete = scanResult.filter(deletable);
-
-  core.info(`table.length=${scanResult.length}; toDelete.length=${toDelete.length}`);
-
-  const batches = chunk(toDelete, 25);
-
-  core.info('Deleting elements from table: ' + dynamoTableName);
-  for (const [, batch] of batches.entries()) {
-    try {
-      const command = new BatchWriteCommand({
-        RequestItems: {
-          [dynamoTableName]: batch.map((item) => ({
-            DeleteRequest: {
-              Key: {
-                [tablePK]: item[tablePK],
-                ...(tableSK ? { [tableSK]: item[tableSK] } : {}),
-              },
-            },
-          })),
-        },
-      });
-      // TODO: handle UnprocessedItems
-      await client.send(command);
-    } catch (error) {
-      const message = getErrorMessage(error);
-      core.error('Failed purge of target table: ' + message);
-      throw error;
-    }
-  }
-};
-
-export const populateTable = async (client: DynamoDBDocumentClient, dynamoTableName: string, data: DynamoData) => {
   const batches = chunk(data, 25);
 
   for (const batch of batches) {
