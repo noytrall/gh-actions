@@ -154,7 +154,6 @@ function getTransformerScript() {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       sandbox.exports.run;
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return fn as (data: Record<string, unknown>[]) => { data: Record<string, unknown>[] };
   }
   return undefined;
