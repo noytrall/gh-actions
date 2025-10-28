@@ -61300,6 +61300,7 @@ const configSchema = zod.object({
         const configPath = core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
+        console.log('config :>> ', config);
         const result = configSchema.safeParse(config);
         if (result.error) {
             core.error('parseResult: ' + JSON.stringify(result, null, 2));
@@ -61342,12 +61343,15 @@ const configSchema = zod.object({
         const sourceDynamodbClient = createDynamoDocumentClient(sourceAwsConfig);
         const transformerFunction = getTransformerScript();
         let maxNumberOfItems = config.maxNumberOfItems;
+        core.info('MAX NUMBER OF ITEMS: ' + (maxNumberOfItems?.toString() ?? 'undefined'));
         for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
             let transformedData = transformerFunction?.(items) ?? items;
+            console.log('transformedData.length :>> ', transformedData.length);
             if (maxNumberOfItems !== undefined) {
                 transformedData = transformedData.slice(0, maxNumberOfItems);
                 maxNumberOfItems -= transformedData.length;
             }
+            console.log('AFTER transformedData.length :>> ', transformedData.length);
             await populateTable(targetDynamodbClient, config.target.dynamoTableName, transformedData);
             if (maxNumberOfItems !== undefined && maxNumberOfItems <= 0)
                 break;

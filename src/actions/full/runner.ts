@@ -18,6 +18,8 @@ export default async function () {
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
+    console.log('config :>> ', config);
+
     const result = configSchema.safeParse(config);
     if (result.error) {
       core.error('parseResult: ' + JSON.stringify(result, null, 2));
@@ -78,14 +80,18 @@ export default async function () {
     const transformerFunction = getTransformerScript();
 
     let maxNumberOfItems = config.maxNumberOfItems;
+    core.info('MAX NUMBER OF ITEMS: ' + (maxNumberOfItems?.toString() ?? 'undefined'));
 
     for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
       let transformedData = transformerFunction?.(items) ?? items;
+
+      console.log('transformedData.length :>> ', transformedData.length);
 
       if (maxNumberOfItems !== undefined) {
         transformedData = transformedData.slice(0, maxNumberOfItems);
         maxNumberOfItems -= transformedData.length;
       }
+      console.log('AFTER transformedData.length :>> ', transformedData.length);
 
       await populateTable(targetDynamodbClient, config.target.dynamoTableName, transformedData);
 
