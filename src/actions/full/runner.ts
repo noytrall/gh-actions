@@ -21,8 +21,8 @@ export default async function () {
     console.log('config :>> ', config);
 
     const result = configSchema.safeParse(config);
+    core.error('parseResult: ' + JSON.stringify(result, null, 2));
     if (result.error) {
-      core.error('parseResult: ' + JSON.stringify(result, null, 2));
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
