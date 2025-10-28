@@ -61302,8 +61302,8 @@ const configSchema = zod.object({
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
         console.log('config :>> ', config);
         const result = configSchema.safeParse(config);
-        core.error('parseResult: ' + JSON.stringify(result, null, 2));
         if (result.error) {
+            core.error('parseResult: ' + JSON.stringify(result, null, 2));
             throw new Error(JSON.stringify(result.error.issues, null, 2));
         }
         const [sourceAwsRegion, sourceAwsAccessKeyId, sourceAwsSecretAccessKey, sourceAwsSessionToken, targetAwsRegion, targetAwsAccessKeyId, targetAwsSecretAccessKey, targetAwsSessionToken,] = [
@@ -61345,7 +61345,7 @@ const configSchema = zod.object({
         let maxNumberOfItems = config.maxNumberOfItems;
         core.info('MAX NUMBER OF ITEMS: ' + (maxNumberOfItems?.toString() ?? 'undefined'));
         for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
-            let transformedData = transformerFunction?.(items) ?? items;
+            let transformedData = transformerFunction?.(items).data ?? items;
             console.log('transformedData.length :>> ', transformedData.length);
             if (maxNumberOfItems !== undefined) {
                 transformedData = transformedData.slice(0, maxNumberOfItems);

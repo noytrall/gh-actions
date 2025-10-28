@@ -21,8 +21,8 @@ export default async function () {
     console.log('config :>> ', config);
 
     const result = configSchema.safeParse(config);
-    core.error('parseResult: ' + JSON.stringify(result, null, 2));
     if (result.error) {
+      core.error('parseResult: ' + JSON.stringify(result, null, 2));
       throw new Error(JSON.stringify(result.error.issues, null, 2));
     }
 
@@ -83,7 +83,7 @@ export default async function () {
     core.info('MAX NUMBER OF ITEMS: ' + (maxNumberOfItems?.toString() ?? 'undefined'));
 
     for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
-      let transformedData = transformerFunction?.(items) ?? items;
+      let transformedData = transformerFunction?.(items).data ?? items;
 
       console.log('transformedData.length :>> ', transformedData.length);
 
@@ -155,7 +155,7 @@ function getTransformerScript() {
       sandbox.exports.run;
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return fn as (data: Record<string, unknown>[]) => Record<string, unknown>[];
+    return fn as (data: Record<string, unknown>[]) => { data: Record<string, unknown>[] };
   }
   return undefined;
 }
