@@ -48690,7 +48690,7 @@ async function* scanTableIterator(client, tableName, inputProps) {
             const command = new lib_dynamodb_dist_cjs/* ScanCommand */.Zy(input);
             console.log('input :>> ', JSON.stringify(input, null, 2));
             const result = await client.send(command);
-            console.log('RESULT SUCESS');
+            console.log('RESULT SUCCESS');
             yield result.Items ?? [];
             lastKey = result.LastEvaluatedKey;
         } while (lastKey);
@@ -61348,17 +61348,14 @@ const configSchema = zod.object({
         core.info('MAX NUMBER OF ITEMS: ' + (maxNumberOfItems?.toString() ?? 'undefined'));
         for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
             let transformedData = transformerFunction?.(items).data ?? items;
-            console.log('transformedData.length :>> ', transformedData.length);
             if (maxNumberOfItems !== undefined) {
                 transformedData = transformedData.slice(0, maxNumberOfItems);
                 maxNumberOfItems -= transformedData.length;
             }
-            console.log('AFTER transformedData.length :>> ', transformedData.length, maxNumberOfItems);
             await populateTable(targetDynamodbClient, config.target.dynamoTableName, transformedData);
             if (maxNumberOfItems !== undefined && maxNumberOfItems <= 0)
                 break;
         }
-        console.log('EOA');
     }
     catch (error) {
         core.setFailed(getErrorMessage(error));

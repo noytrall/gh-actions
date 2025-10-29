@@ -85,19 +85,15 @@ export default async function () {
     for await (const items of scanTableIterator(sourceDynamodbClient, config.source.dynamoTableName)) {
       let transformedData = transformerFunction?.(items).data ?? items;
 
-      console.log('transformedData.length :>> ', transformedData.length);
-
       if (maxNumberOfItems !== undefined) {
         transformedData = transformedData.slice(0, maxNumberOfItems);
         maxNumberOfItems -= transformedData.length;
       }
-      console.log('AFTER transformedData.length :>> ', transformedData.length, maxNumberOfItems);
 
       await populateTable(targetDynamodbClient, config.target.dynamoTableName, transformedData);
 
       if (maxNumberOfItems !== undefined && maxNumberOfItems <= 0) break;
     }
-    console.log('EOA');
   } catch (error) {
     core.setFailed(getErrorMessage(error));
   }

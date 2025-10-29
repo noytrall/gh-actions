@@ -1,174 +1,120 @@
----
-# AWS Cross-Account Data Sync GitHub Action
+# DynamoDB Table Migration Action
 
-This GitHub Action enables **data transfer between two AWS accounts**, supporting both **DynamoDB** and **S3** as source and target resources.
-It can be run as a **single end-to-end action** or split into **two separate actions** for greater flexibility — for example, if you need to insert a custom data transformation step between fetching and writing data.
+This GitHub Action automates **data migration between two DynamoDB tables**, even if they are in **different AWS accounts or regions**.  
+It supports optional **data filtering and transformation** via a custom JavaScript file.
+
 ---
 
 ## 🚀 Features
 
-- Move data between **different AWS accounts**.
-- Supports **DynamoDB → DynamoDB**, **S3 → S3**, and **DynamoDB ↔ S3**.
-- Configurable via a single JSON config file.
-- Option to **purge the target DynamoDB table** before writing.
-- Supports **intermediate transformations** (e.g., removing PII data) between source and target.
+- Copy data from one DynamoDB table to another.
+- Works across **different AWS regions and accounts**.
+- Optionally **purge the target table** before inserting new data.
+- Supports a **JavaScript-based data filter/transformer**.
+- Optional **limit** on the number of items to transfer.
+
+---
+
+## 🧩 Inputs
+
+### Required Inputs
+
+| Name                           | Description                                      | Example                                       |
+| ------------------------------ | ------------------------------------------------ | --------------------------------------------- |
+| `config-path`                  | Path to the JSON configuration file (see below). | `./config.json`                               |
+| `source-aws-region`            | AWS region of the source table.                  | `eu-west-1`                                   |
+| `source-aws-access-key-id`     | Access key ID for the source AWS account.        | `${{ secrets.SOURCE_AWS_ACCESS_KEY_ID }}`     |
+| `source-aws-secret-access-key` | Secret access key for the source AWS account.    | `${{ secrets.SOURCE_AWS_SECRET_ACCESS_KEY }}` |
+| `source-aws-session-token`     | Session token for the source AWS account.        | `${{ secrets.SOURCE_AWS_SESSION_TOKEN }}`     |
+| `target-aws-region`            | AWS region of the target table.                  | `us-west-2`                                   |
+| `target-aws-access-key-id`     | Access key ID for the target AWS account.        | `${{ secrets.TARGET_AWS_ACCESS_KEY_ID }}`     |
+| `target-aws-secret-access-key` | Secret access key for the target AWS account.    | `${{ secrets.TARGET_AWS_SECRET_ACCESS_KEY }}` |
+| `target-aws-session-token`     | Session token for the target AWS account.        | `${{ secrets.TARGET_AWS_SESSION_TOKEN }}`     |
+
+### Optional Inputs
+
+| Name          | Description                                                                                    | Example       |
+| ------------- | ---------------------------------------------------------------------------------------------- | ------------- |
+| `script-path` | Path to a JavaScript file that filters or transforms items before writing to the target table. | `./filter.js` |
 
 ---
 
 ## ⚙️ Configuration File
 
-The GitHub Action expects a JSON config file with the following TypeScript shape:
+The configuration file defines how the data migration should be performed.
+
+**Shape:**
 
 ```ts
 type Config = {
-  source:
-    | {
-        type: "dynamo";
-        dynamoTableName: string;
-      }
-    | {
-        type: "s3";
-        s3Config: {
-          [x: string]: unknown;
-          Bucket: string;
-          Key: string;
-        };
-      };
-  target:
-    | {
-        type: "dynamo";
-        dynamoTableName: string;
-        purgeTable?: boolean;
-        tablePrimaryKey?: {
-          pk: string;
-          sk?: string;
-        };
-      }
-    | {
-        type: "s3";
-        s3Config: {
-          [x: string]: unknown;
-          Bucket: string;
-          Key: string;
-        };
-      };
+  source: {
+    dynamoTableName: string;
+  };
+  target: {
+    dynamoTableName: string;
+    purgeTable: boolean;
+  };
+  maxNumberOfItems?: number | undefined;
 };
 ```
 
-### Notes:
-
-- For S3 sources, `s3Config` can include any valid `GetObjectCommand` parameters.
-- For S3 targets, `s3Config` can include any valid `PutObjectCommand` parameters.
-
----
-
-## 🧩 Available Actions
-
-### 1. **Full Action**
-
-Runs the entire process — fetching from the source and writing to the target.
-
-**File:** `actions/sync-envs/full/action.yaml`
-
-**Inputs:**
-
-- `config-path`: Path to the JSON config file.
-- Source and target AWS credentials (region, access key, secret, and session token).
-
 **Example:**
 
-```yaml
-jobs:
-  one_step:
-    runs-on: ubuntu-latest
-    steps:
-
-     - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Configure Source AWS credentials
-        id: source-aws-creds
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: arn:aws:iam::source-account:role/example-role
-          role-session-name: example-session-name
-          aws-region: eu-west-1
-          audience: sts.amazonaws.com
-          output-credentials: true
-
-      - name: Configure Target AWS credentials
-        id: target-aws-creds
-        uses: aws-actions/configure-aws-credentials@v5
-        with:
-          role-to-assume: arn:aws:iam::target-account:role/example-role
-          role-session-name: example-session-name
-          aws-region: eu-west-1
-          audience: sts.amazonaws.com
-          output-credentials: true
-
-      - name: Run full sync
-        uses: cinch/gh-actions/actions/sync-envs/full@main
-        with:
-          config-path: ./path/to/config/config-file.json
-          source-aws-access-key-id: ${{ steps.source-aws-creds.outputs.aws-access-key-id }}
-          source-aws-secret-access-key: ${{ steps.source-aws-creds.outputs.aws-secret-access-key }}
-          source-aws-session-token: ${{ steps.source-aws-creds.outputs.aws-session-token }}
-          target-aws-access-key-id: ${{ steps.target-aws-creds.outputs.aws-access-key-id }}
-          target-aws-secret-access-key: ${{ steps.target-aws-creds.outputs.aws-secret-access-key }}
-          target-aws-session-token: ${{ steps.target-aws-creds.outputs.aws-session-token }}
+```json
+{
+  "source": {
+    "dynamoTableName": "UsersTable"
+  },
+  "target": {
+    "dynamoTableName": "UsersBackup",
+    "purgeTable": true
+  },
+  "maxNumberOfItems": 1000
+}
 ```
 
 ---
 
-### 2. **Separate Source and Target Actions**
+## 🧪 Filter Script (Optional)
 
-These can be used independently to allow for **custom middleware** or transformation logic.
+You can optionally specify a JavaScript file to filter or transform each item before it is written to the target table.
 
-#### **Source Action**
+The script must **export a function** like this:
 
-Fetches data from the source resource.
+```js
+// filter.js
+function run(data) {
+  return { data: data.filter((d) => !d.isPII) };
+}
 
-**File:** `actions/sync-envs/source/action.yaml`
+module.exports = { run };
+```
 
-**Inputs:**
+If `script-path` is not provided, items are copied as-is.
 
-- `config-path`: Path to the JSON config file.
+---
 
-**Outputs:**
-
-- `source-data`: The raw data fetched from the source.  
-  ⚠️ **Note:** The `source-data` output has the following shape:
-
-  ```ts
-  {
-    data: SourceData;
-    // ...other fields for use by target/action or middleware
-  }
-  ```
-
-#### **Target Action**
-
-Writes data to the target resource.
-
-**File:** `actions/sync-envs/target/action.yaml`
-
-**Inputs:**
-
-- `config-path`: Path to the JSON config file.
-- `source-data`: Data fetched from the source.
-- `transformed-data`: (Optional) Data after middleware processing.
-
-**Example:**
+## 🧰 Example Workflow
 
 ```yaml
+name: Sync Envs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - francisco
+
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
-  two_steps:
-    name: Two steps to sync accounts
+  one_action:
+    name: a job to sync envs
     runs-on: ubuntu-latest
 
     steps:
-      # To use this repository's private action,
-      # you must check out the repository
       - name: Checkout
         uses: actions/checkout@v5
 
@@ -176,68 +122,50 @@ jobs:
         id: source-aws-creds
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: arn:aws:iam::source-account:role/example-role
-          role-session-name: example-session-name
+          role-to-assume: arn:aws:iam::511560072567:role/infrastructure/sd-cinch-labs-sites-component
+          role-session-name: vehicle-data_deploy_role
           aws-region: eu-west-1
           audience: sts.amazonaws.com
-
-      - name: get data from Source environment
-        id: source-data
-        uses: cinch/gh-actions/actions/sync-envs/source@main
-        with:
-          config-path: ./configs/env-sync.json
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install @actions/core
-
-      - name: Run Middleware file
-        id: middleware
-        env:
-          SOURCE_DATA: ${{ steps.source-data.outputs.source-data }}
-        run: node src/scripts/gh-actions/source-target-middleware.js
+          output-credentials: true
 
       - name: Configure Target AWS credentials
         id: target-aws-creds
         uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: arn:aws:iam::target-account:role/example-role
-          role-session-name: example-session-name
+          role-to-assume: arn:aws:iam::511560072567:role/infrastructure/sd-cinch-labs-sites-component
+          role-session-name: vehicle-data_deploy_role
           aws-region: eu-west-1
           audience: sts.amazonaws.com
           output-credentials: true
 
-      - name: put data in Target environment
-        id: target-sync-env
-        uses: cinch/gh-actions/actions/sync-envs/target@main
+      - name: env sync action step
+        uses: noytrall/gh-actions/actions/sync-envs/full@main
         with:
           config-path: ./configs/env-sync.json
-          source-data: ${{ steps.source-data.outputs.source-data }}
-          transformed-data: ${{ steps.middleware.outputs.transformed-data }}
+          script-path: ./src/scripts/gh-actions/transform-data.js
+          target-aws-region: eu-west-1
+          target-aws-access-key-id: ${{ steps.target-aws-creds.outputs.aws-access-key-id }}
+          target-aws-secret-access-key: ${{ steps.target-aws-creds.outputs.aws-secret-access-key }}
+          target-aws-session-token: ${{ steps.target-aws-creds.outputs.aws-session-token }}
+          source-aws-region: eu-west-1
+          source-aws-access-key-id: ${{ steps.source-aws-creds.outputs.aws-access-key-id }}
+          source-aws-secret-access-key: ${{ steps.source-aws-creds.outputs.aws-secret-access-key }}
+          source-aws-session-token: ${{ steps.source-aws-creds.outputs.aws-session-token }}
 ```
 
 ---
 
-## 🧩 Middleware Example
+## 🪣 Behavior Summary
 
-A middleware script can process the source data and output a transformed version via @actions/core.
-Because the source-data output has the shape { data: SourceData, ... }, the middleware should access the actual payload via source_data.data:
-
-```js
-const core = require("@actions/core");
-
-(async () => {
-  const sourceData = JSON.parse(process.env.SOURCE_DATA); // { data: SourceData, ... }
-  const records = sourceData.data; // Access the actual fetched data
-
-  const sanitizedData = records.filter((item) => !item.containsSensitiveInfo);
-
-  core.setOutput("transformed-data", JSON.stringify(sanitizedData));
-})();
-```
+| Action                     | Description                                               |
+| -------------------------- | --------------------------------------------------------- |
+| **Reads source table**     | Scans all items or up to `maxNumberOfItems`.              |
+| **Purges target table**    | Deletes all existing records if `purgeTable` is `true`.   |
+| **Applies filter script**  | Transforms or skips items if a filter script is provided. |
+| **Writes to target table** | Inserts the final set of items into the target table.     |
 
 ---
+
+## 🧾 License
+
+MIT License © 2025 Your Organization
