@@ -4,9 +4,9 @@ import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'vm';
-import { doPurgeTable, populateTable, scanTableIterator } from '../../utils/dynamo.js';
-import { getErrorMessage } from '../../utils/errors.js';
-import { configSchema, type AWSConfig, type Config } from '../../utils/types.js';
+import { doPurgeTable, populateTable, scanTableIterator } from './utils/dynamo.js';
+import { getErrorMessage } from './utils/errors.js';
+import { configSchema, type AWSConfig, type Config } from './utils/types.js';
 
 export default async function () {
   console.log('process.env.GITHUB_WORKSPACE! :>> ', process.env.GITHUB_WORKSPACE!);

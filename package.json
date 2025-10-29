@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "package:full": "ncc build src/actions/full/action.ts -o actions/sync-envs/full/dist",
+    "package:full": "ncc build src/action.ts -o actions/sync-envs/full/dist",
     "package": "npm run package:full",
     "test": "vitest",
     "test:watch": "vitest watch",

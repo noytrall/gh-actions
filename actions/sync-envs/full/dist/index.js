@@ -47909,11 +47909,11 @@ module.exports = {
 
 /***/ }),
 
-/***/ 2791:
+/***/ 2929:
 /***/ ((module, __unused_webpack___webpack_exports__, __nccwpck_require__) => {
 
 __nccwpck_require__.a(module, async (__webpack_handle_async_dependencies__, __webpack_async_result__) => { try {
-/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(5923);
+/* harmony import */ var _runner__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(6973);
 
 await (0,_runner__WEBPACK_IMPORTED_MODULE_0__/* ["default"] */ .A)();
 
@@ -47922,7 +47922,7 @@ __webpack_async_result__();
 
 /***/ }),
 
-/***/ 5923:
+/***/ 6973:
 /***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
 
@@ -61285,7 +61285,7 @@ const configSchema = zod.object({
     maxNumberOfItems: zod.number().optional(),
 });
 
-;// CONCATENATED MODULE: ./src/actions/full/runner.ts
+;// CONCATENATED MODULE: ./src/runner.ts
 
 
 
@@ -61302,7 +61302,6 @@ const configSchema = zod.object({
         const configPath = core.getInput('config-path', { required: true });
         const fullPath = external_node_path_default().resolve(process.env.GITHUB_WORKSPACE, configPath);
         const config = JSON.parse(external_node_fs_default().readFileSync(fullPath, 'utf8'));
-        console.log('config :>> ', config);
         const result = configSchema.safeParse(config);
         if (result.error) {
             core.error('parseResult: ' + JSON.stringify(result, null, 2));
@@ -63537,6 +63536,6 @@ module.exports = /*#__PURE__*/JSON.parse('{"name":"@aws-sdk/client-dynamodb","de
 /******/ // startup
 /******/ // Load entry module and return exports
 /******/ // This entry module used 'module' so it can't be inlined
-/******/ var __webpack_exports__ = __nccwpck_require__(2791);
+/******/ var __webpack_exports__ = __nccwpck_require__(2929);
 /******/ __webpack_exports__ = await __webpack_exports__;
 /******/ 
