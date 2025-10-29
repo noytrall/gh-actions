@@ -18,8 +18,6 @@ export default async function () {
 
     const config: Config = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
-    console.log('config :>> ', config);
-
     const result = configSchema.safeParse(config);
     if (result.error) {
       core.error('parseResult: ' + JSON.stringify(result, null, 2));

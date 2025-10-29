@@ -101,9 +101,6 @@ name: Sync Envs
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - francisco
 
 permissions:
   contents: read
